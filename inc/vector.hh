@@ -7,12 +7,14 @@
 #include <type_traits>
 #include <algorithm>
 #include <numeric>
+#include <cmath>
 
 namespace ohtoai {
     namespace math {
         template <typename T, size_t D>
         class Vector {
         public:
+            using value_type = T;
             Vector() = default;
             Vector(const Vector&) = default;
             template<typename... Args>
@@ -23,8 +25,8 @@ namespace ohtoai {
             Vector& operator=(const Vector&) = default;
             ~Vector() = default;
 
-            T& operator[](size_t i) { return e[i]; }
-            const T& operator[](size_t i) const { return e[i]; }
+            value_type& operator[](size_t i) { return e[i]; }
+            const value_type& operator[](size_t i) const { return e[i]; }
 
             template<typename U>
             Vector& operator+=(const Vector<U, D>& v) {
@@ -44,20 +46,20 @@ namespace ohtoai {
                 return *this;
             }
 
-            Vector& operator*=(const T& t) {
+            Vector& operator*=(const value_type& t) {
                 for (size_t i = 0; i < D; ++i)
                     e[i] *= t;
                 return *this;
             }
 
-            Vector& operator/=(const T& t) {
+            Vector& operator/=(const value_type& t) {
                 for (size_t i = 0; i < D; ++i)
                     e[i] /= t;
                 return *this;
             }
 
             auto length2() const {
-                return std::reduce(std::begin(e), std::end(e), T{}, [](const T& a, const T& b) { return a + b * b; });
+                return std::reduce(std::begin(e), std::end(e), value_type{}, [](const value_type& a, const value_type& b) { return a + b * b; });
             }
 
             auto length() const {
@@ -65,12 +67,12 @@ namespace ohtoai {
             }
 
             Vector& normalize() {
-                static_assert(std::is_floating_point_v<T>, "Vector must be floating point type");
+                static_assert(std::is_floating_point_v<value_type>, "Vector must be floating point type");
                 return *this /= length();
             }
 
             Vector normalized() const {
-                static_assert(std::is_floating_point_v<T>, "Vector must be floating point type");
+                static_assert(std::is_floating_point_v<value_type>, "Vector must be floating point type");
                 return *this / length();
             }
 
@@ -95,14 +97,47 @@ namespace ohtoai {
             const auto begin() const { return std::begin(e); }
             const auto end() const { return std::end(e); }
         protected:
-            T e[D]{};
+            value_type e[D]{};
 
             template<typename Arg, typename... Args>
             void initializeElements(Arg first, Args... rest) {
-                e[D - sizeof...(Args) - 1] = static_cast<T>(first);
+                e[D - sizeof...(Args) - 1] = static_cast<value_type>(first);
                 if constexpr (sizeof...(Args) > 0)
                     initializeElements(rest...);
             }
+
+            template <typename Arg, typename... Args>
+            friend auto createVector(Arg arg, Args... args);
+
+            template <typename T, size_t D>
+            friend const Vector<T, D>& operator-(const Vector<T, D>& v);
+
+            template<typename T, size_t D, typename U>
+            friend Vector<typename std::common_type_t<T, U>, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2);
+
+            template<typename T, size_t D, typename U>
+            friend Vector<typename std::common_type_t<T, U>, D> operator-(const Vector<T, D>& v1, const Vector<U, D>& v2);
+
+            template<typename T, size_t D>
+            friend Vector<T, D> operator*(const Vector<T, D>& v, const typename Vector<T, D>::value_type& t);
+
+            template<typename T, size_t D>
+            friend Vector<T, D> operator*(const typename Vector<T, D>::value_type& t, const Vector<T, D>& v);
+
+            template<typename T, size_t D>
+            friend Vector<T, D> operator/(const Vector<T, D>& v, const typename Vector<T, D>::value_type& t);
+
+            template<typename T, size_t D, typename U>
+            friend Vector<typename std::common_type_t<T, U>, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2);
+
+            template<typename T, size_t D, typename U>
+            friend bool operator==(const Vector<T, D>& v1, const Vector<U, D>& v2);
+
+            template<typename T, size_t D, typename U>
+            friend bool operator!=(const Vector<T, D>& v1, const Vector<U, D>& v2);
+
+            template<typename T, size_t D, typename U>
+            friend Vector<U, D> cast(const Vector<T, D>& v);
         };
 
         template <typename Arg, typename... Args>
@@ -132,13 +167,18 @@ namespace ohtoai {
         }
 
         template<typename T, size_t D>
-        Vector<T, D> operator*(const Vector<T, D>& v, const T& t) {
+        Vector<T, D> operator*(const Vector<T, D>& v, const typename Vector<T, D>::value_type& t) {
             Vector<T, D> prod(v);
             return prod *= t;
         }
 
         template<typename T, size_t D>
-        Vector<T, D> operator/(const Vector<T, D>& v, const T& t) {
+        Vector<T, D> operator*(const typename Vector<T, D>::value_type& t, const Vector<T, D>& v) {
+            return v * t;
+        }
+
+        template<typename T, size_t D>
+        Vector<T, D> operator/(const Vector<T, D>& v, const typename Vector<T, D>::value_type& t) {
             Vector<T, D> quot(v);
             return quot /= t;
         }

@@ -2,7 +2,7 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("Verify Color endian") {
-    using ohtoai::Color;
+    using Color = ohtoai::color::Colorf;
     Color c(0x11223344);
 
     REQUIRE(c.red() == 0x44);
@@ -12,7 +12,7 @@ TEST_CASE("Verify Color endian") {
 }
 
 TEST_CASE("Verify Color operator") {
-    using ohtoai::Color;
+    using Color = ohtoai::color::Colorf;
     Color c(0x11223344);
 
     c.red() = 0x55;
@@ -28,7 +28,7 @@ TEST_CASE("Verify Color operator") {
 }
 
 TEST_CASE("Verify Color::rgb, Color::rgba") {
-    using ohtoai::Color;
+    using Color = ohtoai::color::Colorf;
     Color c;
 
     c = Color::rgb(0x11, 0x22, 0x33);
@@ -46,21 +46,8 @@ TEST_CASE("Verify Color::rgb, Color::rgba") {
     REQUIRE(static_cast<uint32_t>(c) == 0x44332211);
 }
 
-TEST_CASE("Verify Color operator uint32_t") {
-    using ohtoai::Color;
-    Color c(0x11223344);
-
-    uint32_t& rgba = c;
-    rgba = 0x55667788;
-
-    REQUIRE(c.red() == 0x88);
-    REQUIRE(c.green() == 0x77);
-    REQUIRE(c.blue() == 0x66);
-    REQUIRE(c.alpha() == 0x55);
-}
-
 TEST_CASE("Verify Color operator Vector3") {
-    using ohtoai::Color;
+    using Color = ohtoai::color::Colorf;
     Color c(ohtoai::math::createVector(1.0f, 2.0f, 3.0f));
 
     REQUIRE(c.red() == 1);
@@ -77,7 +64,7 @@ TEST_CASE("Verify Color operator Vector3") {
 }
 
 TEST_CASE("Verify Color operator Vector") {
-    using ohtoai::Color;
+    using Color = ohtoai::color::Colorf;
     Color c;
 
     c = ohtoai::math::createVector(1.0f, 2.0f, 3.0f);

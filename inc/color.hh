@@ -10,51 +10,65 @@
 #include <type_traits>
 
 namespace ohtoai {
-    // RGBA
-    class Color {
-    public:
-        Color() = default;
-        Color(const Color&) = default;
-        Color(uint32_t rgba) {
-            c.rgba = rgba;
-        }
-        Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0) : Color(static_cast<uint32_t>(r) | (g << 8) | (b << 16) | (a << 24) ) {}
+    namespace color {
+        // RGBA
         template<typename T>
-        Color(const math::Vector<T, 3>& v)
-            : Color(static_cast<uint8_t>(v[0])
-                , static_cast<uint8_t>(v[1])
-                , static_cast<uint8_t>(v[2])) {}
-        template<typename T>
-        Color(const math::Vector<T, 4>& v)
-            : Color(static_cast<uint8_t>(v[0])
-                , static_cast<uint8_t>(v[1])
-                , static_cast<uint8_t>(v[2])
-                , static_cast<uint8_t>(v[3])) {}
-        Color& operator=(const Color&) = default;
-        ~Color() = default;
-        operator uint32_t() const {
-            return c.rgba;
-        }
-        operator uint32_t&() {
-            return c.rgba;
-        }
+        class Color : public math::Vector<T, 4> {
+        public:
+            using value_type = T;
+            using vector_type = math::Vector<value_type, 4>;
+            Color() = default;
+            Color(const Color&) = default;
+            Color(uint32_t rgba) : Color(rgba & 0xff, (rgba >> 8) & 0xff, (rgba >> 16) & 0xff, (rgba >> 24) & 0xff) {}
+            template<typename U>
+            Color(U r, U g, U b, U a = {}) : vector_type(static_cast<value_type>(r), static_cast<value_type>(g), static_cast<value_type>(b), static_cast<value_type>(a)) {}
 
-        const uint8_t& red() const { return c.r; }
-        const uint8_t& green() const { return c.g; }
-        const uint8_t& blue() const { return c.b; }
-        const uint8_t& alpha() const { return c.a; }
-        uint8_t& red() { return c.r; }
-        uint8_t& green() { return c.g; }
-        uint8_t& blue() { return c.b; }
-        uint8_t& alpha() { return c.a; }
+            template<typename U>
+            Color(const math::Vector<U, 3>& v)
+                : Color(static_cast<value_type>(v[0])
+                    , static_cast<value_type>(v[1])
+                    , static_cast<value_type>(v[2])) {}
+            template<typename U>
+            Color(const math::Vector<U, 4>& v)
+                : Color(static_cast<value_type>(v[0])
+                    , static_cast<value_type>(v[1])
+                    , static_cast<value_type>(v[2])
+                    , static_cast<value_type>(v[3])) {}
+            Color& operator=(const Color&) = default;
+            ~Color() = default;
 
-        static Color rgb(uint8_t r, uint8_t g, uint8_t b) {
-            return Color(r, g, b);
-        }
+            explicit operator uint32_t() const {
+                return to_uint32();
+            }
 
-        static Color rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-            return Color(r, g, b, a);
-        }
+            uint32_t to_uint32() const {
+                uint32_t r = red() > 255 ? 255 : red() < 0 ? 0 : static_cast<uint32_t>(red());
+                uint32_t g = green() > 255 ? 255 : green() < 0 ? 0 : static_cast<uint32_t>(green());
+                uint32_t b = blue() > 255 ? 255 : blue() < 0 ? 0 : static_cast<uint32_t>(blue());
+                uint32_t a = alpha() > 255 ? 255 : alpha() < 0 ? 0 : static_cast<uint32_t>(alpha());
+                return (a << 24) | (b << 16) | (g << 8) | r;
+            }
+
+            const value_type& red() const { return (*this)[0]; }
+            const value_type& green() const { return (*this)[1]; }
+            const value_type& blue() const { return (*this)[2]; }
+            const value_type& alpha() const { return (*this)[3]; }
+            value_type& red() { return (*this)[0]; }
+            value_type& green() { return (*this)[1]; }
+            value_type& blue() { return (*this)[2]; }
+            value_type& alpha() { return (*this)[3]; }
+
+            template<typename U>
+            static Color rgb(U r, U g, U b) {
+                return rgba(r, g, b, {});
+            }
+
+            template<typename U>
+            static Color rgba(U r, U g, U b, U a) {
+                return Color(r, g, b, a);
+            }
+
+        };
 
         enum {
             Black			= 0x000000,
@@ -74,27 +88,10 @@ namespace ohtoai {
             Yellow			= 0x55ffff,
             White			= 0xffffff,
         };
-        protected:
-            union abgr_t{
-                uint32_t rgba;
-                struct {
-                    uint8_t a;
-                    uint8_t b;
-                    uint8_t g;
-                    uint8_t r;
-                };
-            };
-            union rgba_t{
-                uint32_t rgba;
-                struct {
-                    uint8_t r;
-                    uint8_t g;
-                    uint8_t b;
-                    uint8_t a;
-                };
-            };
-            typename std::conditional<type::endian::native == type::endian::big, abgr_t, rgba_t>::type c;
-    };
+        using Colorf = Color<float>;
+        using Colord = Color<double>;
+        using Colori = Color<int>;
+    }
 }
 
 #endif // !_OHTOAI_COLOR_H_

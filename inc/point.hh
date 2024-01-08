@@ -12,9 +12,8 @@ namespace ohtoai {
         class Point3 : public Vector<T, 3> {
         public:
             Point3() : Vector<T, 3>() {}
-            Point3(T x, T y, T z) : Vector<T, 3>(x, y, z) {}
+            explicit Point3(T x, T y, T z) : Vector<T, 3>(x, y, z) {}
             Point3(const Vector<T, 3>& v) : Vector<T, 3>(v) {}
-            Point3(const Point3<T>& p) : Vector<T, 3>(p) {}
             T& x() { return e[0]; }
             T& y() { return e[1]; }
             T& z() { return e[2]; }
