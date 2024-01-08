@@ -5,6 +5,7 @@
 #define _OHTOAI_VECTOR_H_
 
 #include <type_traits>
+#include <algorithm>
 
 namespace ohtoai {
     namespace math {
@@ -24,45 +25,44 @@ namespace ohtoai {
             T& operator[](size_t i) { return e[i]; }
             const T& operator[](size_t i) const { return e[i]; }
 
-            Vector& operator+=(const Vector& v) {
-                for (size_t i = 0; i < D; ++i)
-                    e[i] += v[i];
+            template<typename U>
+            Vector& operator+=(const Vector<U, D>& v) {
+                std::transform(std::begin(e), std::end(e), std::begin(v.e), std::begin(e), std::plus());
                 return *this;
             }
 
-            Vector& operator-=(const Vector& v) {
-                for (size_t i = 0; i < D; ++i)
-                    e[i] -= v[i];
+            template<typename U>
+            Vector& operator-=(const Vector<U, D>& v) {
+                std::transform(std::begin(e), std::end(e), std::begin(v.e), std::begin(e), std::minus());
                 return *this;
             }
 
-            Vector& operator*=(const Vector& v) {
-                for (size_t i = 0; i < D; ++i)
-                    e[i] *= v[i];
+            template<typename U>
+            Vector& operator*=(const Vector<U, D>& v) {
+                std::transform(std::begin(e), std::end(e), std::begin(v.e), std::begin(e), std::multiplies());
                 return *this;
             }
 
-            Vector& operator*=(const T& t) {
+            template<typename U>
+            Vector& operator*=(const U& t) {
                 for (size_t i = 0; i < D; ++i)
                     e[i] *= t;
                 return *this;
             }
 
-            Vector& operator/=(const T& t) {
+            template<typename U>
+            Vector& operator/=(const U& t) {
                 for (size_t i = 0; i < D; ++i)
                     e[i] /= t;
                 return *this;
             }
 
             T length_squared() const {
-                T sum = 0;
-                for (size_t i = 0; i < D; ++i)
-                    sum += e[i] * e[i];
-                return sum;
+                return std::reduce(std::begin(e), std::end(e), std::multiplies());
             }
 
             T length() const {
-                return sqrt(length_squared());
+                return std::sqrt(length_squared());
             }
 
             Vector& normalize() {
@@ -73,16 +73,15 @@ namespace ohtoai {
                 return *this / length();
             }
 
-            T dot(const Vector& v) const {
-                T sum = 0;
-                for (size_t i = 0; i < D; ++i)
-                    sum += e[i] * v[i];
-                return sum;
+            template<typename U>
+            typename std::common_type<T, U>::type dot(const Vector<U, D>& v) const {
+                return std::transform_reduce(std::begin(e), std::end(e), std::begin(v.e), std::common_type<T, U>::type{});
             }
 
-            Vector cross(const Vector& v) const {
+            template<typename U>
+            Vector<typename std::common_type<T, U>::type, D> cross(const Vector<U, D>& v) const {
                 static_assert(D == 3, "Cross product is only defined for 3D vectors");
-                return Vector(e[1] * v[2] - e[2] * v[1],
+                return Vector<typename std::common_type<T, U>::type, D>(e[1] * v[2] - e[2] * v[1],
                     e[2] * v[0] - e[0] * v[2],
                     e[0] * v[1] - e[1] * v[0]);
             }
@@ -108,24 +107,21 @@ namespace ohtoai {
         template <typename T, size_t D>
         const Vector<T, D>& operator-(const Vector<T, D>& v) {
             auto _v(v)
-            for (size_t i = 0; i < D; ++i)
-                _v[i] = -_v[i];
+            std::transform(std::begin(_v.e), std::end(_v.e), std::begin(_v.e), std::negate());
             return _v;
         }
 
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type<T, U>::type, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type<T, U>::type, D> sum;
-            for (size_t i = 0; i < D; ++i)
-                sum[i] = v1[i] + v2[i];
+            std::transform(std::begin(v1.e), std::end(v1.e), std::begin(v2.e), std::begin(sum.e), std::plus());
             return sum;
         }
 
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type<T, U>::type, D> operator-(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type<T, U>::type, D> diff;
-            for (size_t i = 0; i < D; ++i)
-                diff[i] = v1[i] - v2[i];
+            std::transform(std::begin(v1.e), std::end(v1.e), std::begin(v2.e), std::begin(diff.e), std::minus());
             return diff;
         }
 
@@ -144,8 +140,7 @@ namespace ohtoai {
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type<T, U>::type, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type<T, U>::type, D> prod;
-            for (size_t i = 0; i < D; ++i)
-                prod[i] = v1[i] * v2[i];
+            std::transform(std::begin(v1.e), std::end(v1.e), std::begin(v2.e), std::begin(prod.e), std::multiplies());
             return prod;
         }
 
