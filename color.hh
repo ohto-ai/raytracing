@@ -5,7 +5,9 @@
 #define _OHTOAI_COLOR_H_
 
 #include "vector.hh"
+#include "type_base.hh"
 #include <cstdint>
+#include <type_traits>
 
 namespace ohtoai {
     // RGBA
@@ -16,7 +18,7 @@ namespace ohtoai {
         Color(uint32_t rgba) {
             c.rgba = rgba;
         }
-        Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0) : Color(static_cast<uint32_t>(r) | (g << 8) | (b << 16) | (a << 18) ) {}
+        Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0) : Color(static_cast<uint32_t>(a) | (b << 8) | (g << 16) | (r << 18) ) {}
         template<typename T>
         Color(const math::Vector<T, 3>& v)
             : Color(static_cast<uint8_t>(v[0])
@@ -48,38 +50,29 @@ namespace ohtoai {
 
         enum {
             Black			= 0x000000,
-            Blue			= 0xAA0000,
+            Blue			= 0x0000AA,
             Green			= 0x00AA00,
-            Cyan			= 0xAAAA00,
-            Red				= 0x0000AA,
+            Cyan			= 0x00AAAA,
+            Red				= 0xAA0000,
             Magenta			= 0xAA00AA,
-            Brown			= 0x0055AA,
+            Brown			= 0xAA5500,
             LightGray		= 0xAAAAAA,
             DarkGray		= 0x555555,
-            LightBlue		= 0xFF5555,
+            LightBlue		= 0x5555FF,
             LightGreen		= 0x55FF55,
-            LightCyan		= 0xFFFF55,
-            LightRed		= 0x5555FF,
+            LightCyan		= 0x55FFFF,
+            LightRed		= 0xFF5555,
             LightMagenta	= 0xFF55FF,
-            Yellow			= 0x55FFFF,
+            Yellow			= 0xFFFF55,
             White			= 0xFFFFFF,
         };
         protected:
             union {
                 uint32_t rgba;
-                struct {
-#ifdef __BIG_ENDIAN__
-                    uint8_t a;
-                    uint8_t b;
-                    uint8_t g;
-                    uint8_t r;
-#else
-                    uint8_t r;
-                    uint8_t g;
-                    uint8_t b;
-                    uint8_t a;
-#endif
-                };
+                std::conditional<type::endian::native == type::endian::little, 
+                    struct { uint8_t a,b,g,r; },
+                    struct { uint8_t r,g,b,a; }
+                    >;
             } c;
     };
 }
