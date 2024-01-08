@@ -6,6 +6,7 @@
 
 #include <type_traits>
 #include <algorithm>
+#include <numeric>
 
 namespace ohtoai {
     namespace math {
@@ -43,47 +44,48 @@ namespace ohtoai {
                 return *this;
             }
 
-            template<typename U>
-            Vector& operator*=(const U& t) {
+            Vector& operator*=(const T& t) {
                 for (size_t i = 0; i < D; ++i)
                     e[i] *= t;
                 return *this;
             }
 
-            template<typename U>
-            Vector& operator/=(const U& t) {
+            Vector& operator/=(const T& t) {
                 for (size_t i = 0; i < D; ++i)
                     e[i] /= t;
                 return *this;
             }
 
-            T length_squared() const {
-                return std::reduce(std::begin(e), std::end(e), std::multiplies());
+            auto length2() const {
+                return std::reduce(std::begin(e), std::end(e), T{}, [](const T& a, const T& b) { return a + b * b; });
             }
 
-            T length() const {
-                return std::sqrt(length_squared());
+            auto length() const {
+                return std::sqrt(length2());
             }
 
             Vector& normalize() {
+                static_assert(std::is_floating_point_v<T>, "Vector must be floating point type");
                 return *this /= length();
             }
 
             Vector normalized() const {
+                static_assert(std::is_floating_point_v<T>, "Vector must be floating point type");
                 return *this / length();
             }
 
             template<typename U>
-            typename std::common_type<T, U>::type dot(const Vector<U, D>& v) const {
-                return std::transform_reduce(std::begin(e), std::end(e), std::begin(v.e), std::common_type<T, U>::type{});
+            typename std::common_type_t<T, U> dot(const Vector<U, D>& v) const {
+                return std::transform_reduce(std::begin(e), std::end(e), std::begin(v.e), std::common_type_t<T, U>{});
             }
 
             template<typename U>
-            Vector<typename std::common_type<T, U>::type, D> cross(const Vector<U, D>& v) const {
+            auto cross(const Vector<U, D>& v) const {
                 static_assert(D == 3, "Cross product is only defined for 3D vectors");
-                return Vector<typename std::common_type<T, U>::type, D>(e[1] * v[2] - e[2] * v[1],
-                    e[2] * v[0] - e[0] * v[2],
-                    e[0] * v[1] - e[1] * v[0]);
+                return createVector(
+                    e[1] * v.e[2] - e[2] * v.e[1],
+                    e[2] * v.e[0] - e[0] * v.e[2],
+                    e[0] * v.e[1] - e[1] * v.e[0]);
             }
 
             constexpr size_t size() const { return D; }
@@ -116,15 +118,15 @@ namespace ohtoai {
         }
 
         template<typename T, size_t D, typename U>
-        Vector<typename std::common_type<T, U>::type, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2) {
-            Vector<typename std::common_type<T, U>::type, D> sum;
+        Vector<typename std::common_type_t<T, U>, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2) {
+            Vector<typename std::common_type_t<T, U>, D> sum;
             std::transform(std::begin(v1), std::end(v1), std::begin(v2), std::begin(sum), std::plus());
             return sum;
         }
 
         template<typename T, size_t D, typename U>
-        Vector<typename std::common_type<T, U>::type, D> operator-(const Vector<T, D>& v1, const Vector<U, D>& v2) {
-            Vector<typename std::common_type<T, U>::type, D> diff;
+        Vector<typename std::common_type_t<T, U>, D> operator-(const Vector<T, D>& v1, const Vector<U, D>& v2) {
+            Vector<typename std::common_type_t<T, U>, D> diff;
             std::transform(std::begin(v1), std::end(v1), std::begin(v2), std::begin(diff), std::minus());
             return diff;
         }
@@ -142,8 +144,8 @@ namespace ohtoai {
         }
 
         template<typename T, size_t D, typename U>
-        Vector<typename std::common_type<T, U>::type, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2) {
-            Vector<typename std::common_type<T, U>::type, D> prod;
+        Vector<typename std::common_type_t<T, U>, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2) {
+            Vector<typename std::common_type_t<T, U>, D> prod;
             std::transform(std::begin(v1.e), std::end(v1.e), std::begin(v2.e), std::begin(prod.e), std::multiplies());
             return prod;
         }
@@ -159,6 +161,13 @@ namespace ohtoai {
         template<typename T, size_t D, typename U>
         bool operator!=(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             return !(v1 == v2);
+        }
+
+        template<typename T, size_t D, typename U>
+        Vector<U, D> cast(const Vector<T, D>& v) {
+            Vector<U, D> _v;
+            std::transform(std::begin(v), std::end(v), std::begin(_v), [](const T& t) { return static_cast<U>(t); });
+            return _v;
         }
 
         using Vec2f = Vector<float, 2>;
