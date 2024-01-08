@@ -87,7 +87,7 @@ namespace ohtoai {
                     e[0] * v[1] - e[1] * v[0]);
             }
 
-            size_t size() const { return D; }
+            constexpr size_t size() const { return D; }
 
         protected:
             T e[D]{};
@@ -95,9 +95,9 @@ namespace ohtoai {
             template<typename Arg, typename... Args>
             void initializeElements(Arg first, Args... rest) {
                 e[D - sizeof...(Args) - 1] = static_cast<T>(first);
-                initializeElements(rest...);
+                if constexpr (sizeof...(Args) > 0)
+                    initializeElements(rest...);
             }
-            void initializeElements() {}
         };
 
         template <typename Arg, typename... Args>
