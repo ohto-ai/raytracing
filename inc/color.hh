@@ -18,7 +18,7 @@ namespace ohtoai {
         Color(uint32_t rgba) {
             c.rgba = rgba;
         }
-        Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0) : Color(static_cast<uint32_t>(a) | (b << 8) | (g << 16) | (r << 18) ) {}
+        Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0) : Color(static_cast<uint32_t>(r) | (g << 8) | (b << 16) | (a << 24) ) {}
         template<typename T>
         Color(const math::Vector<T, 3>& v)
             : Color(static_cast<uint8_t>(v[0])
@@ -48,32 +48,52 @@ namespace ohtoai {
         uint8_t& blue() { return c.b; }
         uint8_t& alpha() { return c.a; }
 
+        static Color rgb(uint8_t r, uint8_t g, uint8_t b) {
+            return Color(r, g, b);
+        }
+
+        static Color rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+            return Color(r, g, b, a);
+        }
+
         enum {
             Black			= 0x000000,
-            Blue			= 0x0000AA,
-            Green			= 0x00AA00,
-            Cyan			= 0x00AAAA,
-            Red				= 0xAA0000,
-            Magenta			= 0xAA00AA,
-            Brown			= 0xAA5500,
-            LightGray		= 0xAAAAAA,
+            Blue			= 0xaa0000,
+            Green			= 0x00aa00,
+            Cyan			= 0xaaaa00,
+            Red				= 0x0000aa,
+            Magenta			= 0xaa00aa,
+            Brown			= 0x0055aa,
+            LightGray		= 0xaaaaaa,
             DarkGray		= 0x555555,
-            LightBlue		= 0x5555FF,
-            LightGreen		= 0x55FF55,
-            LightCyan		= 0x55FFFF,
-            LightRed		= 0xFF5555,
-            LightMagenta	= 0xFF55FF,
-            Yellow			= 0xFFFF55,
-            White			= 0xFFFFFF,
+            LightBlue		= 0xff5555,
+            LightGreen		= 0x55ff55,
+            LightCyan		= 0xffff55,
+            LightRed		= 0x5555ff,
+            LightMagenta	= 0xff55ff,
+            Yellow			= 0x55ffff,
+            White			= 0xffffff,
         };
         protected:
-            union {
+            union abgr_t{
                 uint32_t rgba;
-                std::conditional<type::endian::native == type::endian::little, 
-                    struct { uint8_t a,b,g,r; },
-                    struct { uint8_t r,g,b,a; }
-                    >;
-            } c;
+                struct {
+                    uint8_t a;
+                    uint8_t b;
+                    uint8_t g;
+                    uint8_t r;
+                };
+            };
+            union rgba_t{
+                uint32_t rgba;
+                struct {
+                    uint8_t r;
+                    uint8_t g;
+                    uint8_t b;
+                    uint8_t a;
+                };
+            };
+            typename std::conditional<type::endian::native == type::endian::big, abgr_t, rgba_t>::type c;
     };
 }
 

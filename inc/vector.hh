@@ -15,7 +15,7 @@ namespace ohtoai {
             Vector() = default;
             Vector(const Vector&) = default;
             template<typename... Args>
-            Vector(Args ...args) {
+            explicit Vector(Args ...args) {
                 static_assert(sizeof...(args) == D, "Number of arguments must match the vector size");
                 initializeElements(args...);
             }
@@ -88,6 +88,10 @@ namespace ohtoai {
 
             constexpr size_t size() const { return D; }
 
+            auto begin() { return std::begin(e); }
+            auto end() { return std::end(e); }
+            const auto begin() const { return std::begin(e); }
+            const auto end() const { return std::end(e); }
         protected:
             T e[D]{};
 
@@ -107,21 +111,21 @@ namespace ohtoai {
         template <typename T, size_t D>
         const Vector<T, D>& operator-(const Vector<T, D>& v) {
             auto _v(v)
-            std::transform(std::begin(_v.e), std::end(_v.e), std::begin(_v.e), std::negate());
+            std::transform(std::begin(_v), std::end(_v), std::begin(_v), std::negate());
             return _v;
         }
 
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type<T, U>::type, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type<T, U>::type, D> sum;
-            std::transform(std::begin(v1.e), std::end(v1.e), std::begin(v2.e), std::begin(sum.e), std::plus());
+            std::transform(std::begin(v1), std::end(v1), std::begin(v2), std::begin(sum), std::plus());
             return sum;
         }
 
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type<T, U>::type, D> operator-(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type<T, U>::type, D> diff;
-            std::transform(std::begin(v1.e), std::end(v1.e), std::begin(v2.e), std::begin(diff.e), std::minus());
+            std::transform(std::begin(v1), std::end(v1), std::begin(v2), std::begin(diff), std::minus());
             return diff;
         }
 
