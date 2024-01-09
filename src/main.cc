@@ -44,7 +44,7 @@ int main() {
                 const auto t = 0.5f * (UnitDirection[1] + 1.0f);
                 return (Colorf(color::White) * (1.0f - t) + Colorf::rgb(127, 178, 255) * t);
                 }(Light);
-            putpixel(X, Y, WriteColor.to_uint32());
+            putpixel(X, Y, WriteColor.to_easyx_color());
         }
     }
     EndBatchDraw();

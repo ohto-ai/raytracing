@@ -17,9 +17,9 @@ namespace ohtoai {
         public:
             using value_type = T;
             using vector_type = math::Vector<value_type, 4>;
-            Color() = default;
+            Color() : Color(0, 0, 0, 0xff) {};
             Color(const Color&) = default;
-            Color(uint32_t rgba) : Color(rgba & 0xff, (rgba >> 8) & 0xff, (rgba >> 16) & 0xff, (rgba >> 24) & 0xff) {}
+            explicit Color(uint32_t rgba) : Color(((rgba >> 24) & 0xff, rgba >> 16) & 0xff, (rgba >> 8) & 0xff, rgba & 0xff) {}
             template<typename U>
             Color(U r, U g, U b, U a = {}) : vector_type(static_cast<value_type>(r), static_cast<value_type>(g), static_cast<value_type>(b), static_cast<value_type>(a)) {}
 
@@ -37,16 +37,55 @@ namespace ohtoai {
             Color& operator=(const Color&) = default;
             ~Color() = default;
 
-            explicit operator uint32_t() const {
-                return to_uint32();
+            template <int r_index, int g_index, int b_index, int a_index
+                    , uint8_t r_mask = 0xff, uint8_t g_mask = 0xff, uint8_t b_mask = 0xff, uint8_t a_mask = 0xff>
+            uint32_t to_color() const {
+                auto r = static_cast<int>(red());
+                auto g = static_cast<int>(green());
+                auto b = static_cast<int>(blue());
+                auto a = static_cast<int>(alpha());
+                if (r < 0)
+                    r = 0;
+                else if (r > 0xff)
+                    r = 0xff;
+                if (g < 0)
+                    g = 0;
+                else if (g > 0xff)
+                    g = 0xff;
+                if (b < 0)
+                    b = 0;
+                else if (b > 0xff)
+                    b = 0xff;
+
+                if (a < 0)
+                    a = 0;
+                else if (a > 0xff)
+                    a = 0xff;
+                return static_cast<uint32_t>(((r << r_index) & 0xff) | ((g << g_index) & 0xff) | ((b << b_index) & 0xff) | ((a << a_index) & 0xff));
             }
 
-            uint32_t to_uint32() const {
-                uint32_t r = red() > 255 ? 255 : red() < 0 ? 0 : static_cast<uint32_t>(red());
-                uint32_t g = green() > 255 ? 255 : green() < 0 ? 0 : static_cast<uint32_t>(green());
-                uint32_t b = blue() > 255 ? 255 : blue() < 0 ? 0 : static_cast<uint32_t>(blue());
-                uint32_t a = alpha() > 255 ? 255 : alpha() < 0 ? 0 : static_cast<uint32_t>(alpha());
-                return (a << 24) | (b << 16) | (g << 8) | r;
+            uint32_t to_rgba() const {
+                return to_color<24, 16, 8, 0>();
+            }
+
+            uint32_t to_rgb() const {
+                return to_color<16, 8, 0, 24, 0xff, 0xff, 0xff, 0x00>();
+            }
+
+            uint32_t to_argb() const {
+                return to_color<16, 8, 0, 24>();
+            }
+
+            uint32_t to_abgr() const {
+                return to_color<0, 8, 16, 24>();
+            }
+
+            uint32_t to_bgr() const {
+                return to_color<0, 8, 16, 24, 0xff, 0xff, 0xff, 0x00>();
+            }
+
+            uint32_t to_easyx_color() const {
+                return to_bgr();
             }
 
             const value_type& red() const { return (*this)[0]; }
@@ -59,34 +98,42 @@ namespace ohtoai {
             value_type& alpha() { return (*this)[3]; }
 
             template<typename U>
-            static Color rgb(U r, U g, U b) {
-                return rgba(r, g, b, {});
+            static Color from_rgb(U r, U g, U b) {
+                return rgba(r, g, b, 0xff);
+            }
+
+            static Color from_rgb(uint32 rgb) {
+                return from_rgba((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, 0xff);
+            }
+
+            static Color from_rgba(uint32 rgba) {
+                return rgba((rgb >> 24) & 0xff, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
             }
 
             template<typename U>
-            static Color rgba(U r, U g, U b, U a) {
+            static Color from_rgba(U r, U g, U b, U a) {
                 return Color(r, g, b, a);
             }
 
         };
 
         enum {
-            Black			= 0x000000,
-            Blue			= 0xaa0000,
-            Green			= 0x00aa00,
-            Cyan			= 0xaaaa00,
-            Red				= 0x0000aa,
-            Magenta			= 0xaa00aa,
-            Brown			= 0x0055aa,
-            LightGray		= 0xaaaaaa,
-            DarkGray		= 0x555555,
-            LightBlue		= 0xff5555,
-            LightGreen		= 0x55ff55,
-            LightCyan		= 0xffff55,
-            LightRed		= 0x5555ff,
-            LightMagenta	= 0xff55ff,
-            Yellow			= 0x55ffff,
-            White			= 0xffffff,
+            Black			= 0x000000ff,
+            Blue			= 0x0000aaff,
+            Green			= 0x00aa00ff,
+            Cyan			= 0x00aaaaff,
+            Red				= 0xaa0000ff,
+            Magenta			= 0xaa00aaff,
+            Brown			= 0xaa5500ff,
+            LightGray		= 0xaaaaaaff,
+            DarkGray		= 0x555555ff,
+            LightBlue		= 0x5555ffff,
+            LightGreen		= 0x55ff55ff,
+            LightCyan		= 0x55ffffff,
+            LightRed		= 0xff5555ff,
+            LightMagenta	= 0xff55ffff,
+            Yellow			= 0xffff55ff,
+            White			= 0xffffffff,
         };
         using Colorf = Color<float>;
         using Colord = Color<double>;

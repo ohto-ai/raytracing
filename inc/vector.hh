@@ -25,6 +25,15 @@ namespace ohtoai {
             Vector& operator=(const Vector&) = default;
             ~Vector() = default;
 
+            template<typename U>
+            Vector& assign(const Vector<U, D>& v) {
+                if constexpr (std::is_same_v<value_type, U>) {
+                    return operator=(v);
+                } else {
+                    return operator=(cast<value_type>(v));
+                }
+            }
+
             value_type& operator[](size_t i) { return e[i]; }
             const value_type& operator[](size_t i) const { return e[i]; }
 
