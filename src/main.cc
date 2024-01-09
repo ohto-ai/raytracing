@@ -1,49 +1,77 @@
-﻿#include "ray.hh"
-#include "color.hh"
+﻿#include "Ray.hh"
+#include "Color.hh"
+#include "point.hh"
 #include <easyx.h>
 
-int main() {
-    using namespace ohtoai::math;
-    using namespace ohtoai::color;
-    using namespace ohtoai;
+using Ray = ohtoai::math::Rayf;
+using Color = ohtoai::color::Colorf;
+using Point3 = ohtoai::math::Point3f;
+using Vec3 = ohtoai::math::Vec3f;
 
-    const auto AspectRatio = 16.0 / 9.0;
-    const int ImageWidth = 640;
-    const int ImageHeight = static_cast<int>(ImageWidth / AspectRatio);
+bool hit_sphere(const Point3& center, double radius, const Ray& light) {
+    Vec3 origin = light.origin() - center;
+    const auto a = light.direction().dot(light.direction());
+    const auto b = 2.0 * origin.dot(light.direction());
+    const auto c = origin.dot(origin) - radius * radius;
+    const auto delta = b * b - 4 * a * c;
+    return (delta >= 0);
+}
+
+Color blue_box(const Ray& light) {
+    const auto unit_direction = light.direction().normalized();
+    const auto t = 0.5f * (unit_direction.y() + 1.0f);
+    return Color::from_rgb(0xffffff).mix(Color::from_rgb(0x7fb2ff), t);
+}
+
+Color red_ball(const Ray& Light) {
+    if (hit_sphere(Point3(0, 0, -1), 0.5, Light)) {
+        auto Result = Color(1, 0, 0);
+        // 注意 EasyX 中的颜色采用 [0, 255] 的 RGB 制，应把原 [0, 1] 表示颜色的方法映射到 [0, 255] 上
+        Result *= 255;
+        return Result;
+    }
+    auto unit_direction = Light.direction().normalized();
+    const auto a = 0.5 * (unit_direction.y() + 1.0);
+    auto Result = Color::from_rgb(0xffffff).mix(Color::from_rgb(0x7fb2ff), a);
+    return Result;
+}
+
+
+int main() {
+
+    const auto aspect_ratio = 16.0 / 9.0;
+    const int image_width = 640;
+    const int image_height = static_cast<int>(image_width / aspect_ratio);
 
     // camera
-    const auto FocalLength = 1.0;
-    const auto ViewportHeight = 2.0;
-    const auto ViewportWidth = ViewportHeight * (static_cast<double>(ImageWidth) / ImageHeight);
-    const auto CameraCenter = Point3f(0, 0, 0);
+    const auto focal_length = 1.0;
+    const auto viewport_height = 2.0;
+    const auto viewport_width = viewport_height * (static_cast<double>(image_width) / image_height);
+    const auto camera_center = Point3(0, 0, 0);
 
     // 计算横纵向量 u 和 v
-    const auto ViewportU = Vec3f(ViewportWidth, 0, 0);
-    const auto ViewportV = Vec3f(0, -ViewportHeight, 0);
+    const auto viewport_u = Vec3(viewport_width, 0, 0);
+    const auto viewport_v = Vec3(0, -viewport_height, 0);
 
     // 由像素间距计算横纵增量向量
-    const auto PixelDeltaU = ViewportU / ImageWidth;
-    const auto PixelDeltaV = ViewportV / ImageHeight;
+    const auto pixel_delta_u = viewport_u / image_width;
+    const auto pixel_delta_v = viewport_v / image_height;
 
     // 计算左上角像素的位置
-    const auto ViewportUpperLeft = CameraCenter - Vec3f(0, 0, FocalLength) - ViewportU / 2 - ViewportV / 2;
-    const auto Pixel100Loc = ViewportUpperLeft + 0.5 * (PixelDeltaU + PixelDeltaV);
+    const auto viewport_upper_left = camera_center - Vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
+    const auto pixel100_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    initgraph(ImageWidth, ImageHeight);
+    initgraph(image_width, image_height);
     BeginBatchDraw();
     // 渲染部分
-    for (int Y = 0; Y < ImageHeight; ++Y) {
-        const auto HeightVec = static_cast<float>(Y) * PixelDeltaV;
-        for (int X = 0; X < ImageWidth; ++X) {
-            auto PixelCenter = Pixel100Loc + (static_cast<float>(X) * PixelDeltaU) + HeightVec;
-            const auto RayDirection = PixelCenter - CameraCenter;
-            Rayf Light(CameraCenter, RayDirection);
-            auto WriteColor = [](const Rayf& Light) -> Colorf {
-                const auto UnitDirection = Light.direction().normalized();
-                const auto t = 0.5f * (UnitDirection[1] + 1.0f);
-                return (Colorf(color::White) * (1.0f - t) + Colorf::from_rgb(127, 178, 255) * t);
-                }(Light);
-            putpixel(X, Y, WriteColor.to_easyx_color());
+    for (int y = 0; y < image_height; ++y) {
+        const auto height_vec = static_cast<float>(y) * pixel_delta_v;
+        for (int x = 0; x < image_width; ++x) {
+            auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
+            const auto Ray_direction = pixel_center - camera_center;
+            Ray light(camera_center, Ray_direction);
+            auto write_Color = red_ball(light);
+            putpixel(x, y, write_Color.to_easyx_color());
         }
     }
     EndBatchDraw();
