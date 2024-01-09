@@ -97,24 +97,36 @@ namespace ohtoai {
             value_type& blue() { return (*this)[2]; }
             value_type& alpha() { return (*this)[3]; }
 
+            template<typename U = uint8_t>
+            static Color from_rgba(U r, U g, U b, U a) {
+                return Color(r, g, b, a);
+            }
+
+            static Color from_rgba(uint32_t rgba) {
+                return Color(rgba);
+            }
+
             template<typename U>
             static Color from_rgb(U r, U g, U b) {
                 return from_rgba(r, g, b, 0xff);
             }
 
             static Color from_rgb(uint32_t rgb) {
-                return from_rgba((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, 0xff);
+                return from_rgba<uint8_t>((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, 0xff);
             }
 
-            static Color from_rgba(uint32_t rgba) {
-                return from_rgba((rgb >> 24) & 0xff, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
+            template<typename C1, typename C2>
+            static std::enable_if_t<
+                    (std::is_same_v<std::remove_cv_t<C1>, Color> || std::is_same_v<std::remove_cv_t<C1>, uint32_t>)
+                    && (std::is_same_v<std::remove_cv_t<C2>, Color> || std::is_same_v<std::remove_cv_t<C2>, uint32_t>), Color>
+                    mix(const C1& c1, const C2& c2, value_type t) {
+                return Color(c1) * (1 - t) + Color(c2) * t;
             }
 
-            template<typename U>
-            static Color from_rgba(U r, U g, U b, U a) {
-                return Color(r, g, b, a);
+            template<typename C2>
+            auto mix(const C2& c2, value_type t) const {
+                return mix(*this, c2, t);
             }
-
         };
 
         enum {
