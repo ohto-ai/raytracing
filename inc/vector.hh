@@ -105,6 +105,16 @@ namespace ohtoai {
             auto end() { return std::end(e); }
             const auto begin() const { return std::begin(e); }
             const auto end() const { return std::end(e); }
+
+            value_type& x() { return e[0]; }
+            value_type& y() { return e[1]; }
+            value_type& z() { return e[2]; }
+            value_type& w() { return e[3]; }
+
+            const value_type& x() const { return e[0]; }
+            const value_type& y() const { return e[1]; }
+            const value_type& z() const { return e[2]; }
+            const value_type& w() const { return e[3]; }
         protected:
             value_type e[D]{};
 
