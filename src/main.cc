@@ -8,27 +8,25 @@ using Color = ohtoai::color::Colorf;
 using Point3 = ohtoai::math::Point3f;
 using Vec3 = ohtoai::math::Vec3f;
 
-bool hit_sphere(const Point3& center, double radius, const Ray& light) {
+double hit_sphere(const Point3& center, double radius, const Ray& light) {
     Vec3 origin = light.origin() - center;
     const auto a = light.direction().dot(light.direction());
     const auto b = 2.0 * origin.dot(light.direction());
     const auto c = origin.dot(origin) - radius * radius;
     const auto delta = b * b - 4 * a * c;
-    return (delta >= 0);
+    if (delta < 0) {
+        return -1.0;
+    } else {
+        return (-b - sqrt(delta)) / (2.0 * a);
+    }
 }
 
-Color blue_box(const Ray& light) {
-    const auto unit_direction = light.direction().normalized();
-    const auto t = 0.5f * (unit_direction.y() + 1.0f);
-    return Color::from_rgb(0xffffff).mix(Color::from_rgb(0x7fb2ff), t);
-}
-
-Color red_ball(const Ray& Light) {
-    if (hit_sphere(Point3(0, 0, -1), 0.5, Light)) {
-        auto Result = Color(1, 0, 0);
-        // 注意 EasyX 中的颜色采用 [0, 255] 的 RGB 制，应把原 [0, 1] 表示颜色的方法映射到 [0, 255] 上
-        Result *= 255;
-        return Result;
+Color ray_color(const Ray& Light) {
+    const auto t = hit_sphere(Point3(0, 0, -1), 0.5, Light);
+    // 计算法线
+    if (t > 0) {
+        Vec3 Normal = (Light.at(t) - Vec3(0, 0, -1)).normalized();
+        return 255 * 0.5 * Color(Normal.x() + 1, Normal.y() + 1, Normal.z() + 1);
     }
     auto unit_direction = Light.direction().normalized();
     const auto a = 0.5 * (unit_direction.y() + 1.0);
@@ -70,7 +68,7 @@ int main() {
             auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
             const auto Ray_direction = pixel_center - camera_center;
             Ray light(camera_center, Ray_direction);
-            auto write_Color = red_ball(light);
+            auto write_Color = ray_color(light);
             putpixel(x, y, write_Color.to_easyx_color());
         }
     }
