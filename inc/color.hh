@@ -19,7 +19,7 @@ namespace ohtoai {
             using vector_type = math::Vector<value_type, 4>;
             Color() : Color(0, 0, 0, 0xff) {};
             Color(const Color&) = default;
-            explicit Color(uint32_t rgba) : Color(((rgba >> 24) & 0xff, rgba >> 16) & 0xff, (rgba >> 8) & 0xff, rgba & 0xff) {}
+            explicit Color(uint32_t rgba) : Color((rgba >> 24) & 0xff, (rgba >> 16) & 0xff, (rgba >> 8) & 0xff, rgba & 0xff) {}
             template<typename U>
             Color(U r, U g, U b, U a = {}) : vector_type(static_cast<value_type>(r), static_cast<value_type>(g), static_cast<value_type>(b), static_cast<value_type>(a)) {}
 
@@ -61,7 +61,7 @@ namespace ohtoai {
                     a = 0;
                 else if (a > 0xff)
                     a = 0xff;
-                return static_cast<uint32_t>(((r << r_index) & 0xff) | ((g << g_index) & 0xff) | ((b << b_index) & 0xff) | ((a << a_index) & 0xff));
+                return static_cast<uint32_t>(((r & r_mask) << r_index ) | ((g & g_mask) << g_index) | ((b & b_mask) << b_index) | ((a & a_mask) << a_index));
             }
 
             uint32_t to_rgba() const {
@@ -99,15 +99,15 @@ namespace ohtoai {
 
             template<typename U>
             static Color from_rgb(U r, U g, U b) {
-                return rgba(r, g, b, 0xff);
+                return from_rgba(r, g, b, 0xff);
             }
 
-            static Color from_rgb(uint32 rgb) {
+            static Color from_rgb(uint32_t rgb) {
                 return from_rgba((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, 0xff);
             }
 
-            static Color from_rgba(uint32 rgba) {
-                return rgba((rgb >> 24) & 0xff, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
+            static Color from_rgba(uint32_t rgba) {
+                return from_rgba((rgb >> 24) & 0xff, (rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff);
             }
 
             template<typename U>

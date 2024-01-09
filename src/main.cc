@@ -32,17 +32,16 @@ int main() {
     initgraph(ImageWidth, ImageHeight);
     BeginBatchDraw();
     // 渲染部分
-    Colorf WriteColor;
-    for (size_t Y = 0; Y < ImageHeight; ++Y) {
+    for (int Y = 0; Y < ImageHeight; ++Y) {
         const auto HeightVec = static_cast<float>(Y) * PixelDeltaV;
-        for (size_t X = 0; X < ImageWidth; ++X) {
+        for (int X = 0; X < ImageWidth; ++X) {
             auto PixelCenter = Pixel100Loc + (static_cast<float>(X) * PixelDeltaU) + HeightVec;
             const auto RayDirection = PixelCenter - CameraCenter;
             Rayf Light(CameraCenter, RayDirection);
-            WriteColor = [](const Rayf& Light) {
+            auto WriteColor = [](const Rayf& Light) -> Colorf {
                 const auto UnitDirection = Light.direction().normalized();
                 const auto t = 0.5f * (UnitDirection[1] + 1.0f);
-                return (Colorf(color::White) * (1.0f - t) + Colorf::rgb(127, 178, 255) * t);
+                return (Colorf(color::White) * (1.0f - t) + Colorf::from_rgb(127, 178, 255) * t);
                 }(Light);
             putpixel(X, Y, WriteColor.to_easyx_color());
         }
