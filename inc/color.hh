@@ -19,7 +19,7 @@ namespace ohtoai {
             using vector_type = math::Vector<value_type, 4>;
             Color() : Color(0, 0, 0, 0xff) {};
             Color(const Color&) = default;
-            explicit Color(uint32_t rgba) : Color((rgba >> 24) & 0xff, (rgba >> 16) & 0xff, (rgba >> 8) & 0xff, rgba & 0xff) {}
+            Color(uint32_t rgba) : Color((rgba >> 24) & 0xff, (rgba >> 16) & 0xff, (rgba >> 8) & 0xff, rgba & 0xff) {}
             template<typename U>
             Color(U r, U g, U b, U a = {}) : vector_type(static_cast<value_type>(r), static_cast<value_type>(g), static_cast<value_type>(b), static_cast<value_type>(a)) {}
 
@@ -56,7 +56,6 @@ namespace ohtoai {
                     b = 0;
                 else if (b > 0xff)
                     b = 0xff;
-
                 if (a < 0)
                     a = 0;
                 else if (a > 0xff)
@@ -98,28 +97,25 @@ namespace ohtoai {
             value_type& alpha() { return (*this)[3]; }
 
             template<typename U = uint8_t>
-            static Color from_rgba(U r, U g, U b, U a) {
+            static Color rgba(U r, U g, U b, U a) {
                 return Color(r, g, b, a);
             }
 
-            static Color from_rgba(uint32_t rgba) {
+            static Color rgba(uint32_t rgba) {
                 return Color(rgba);
             }
 
             template<typename U>
-            static Color from_rgb(U r, U g, U b) {
-                return from_rgba(r, g, b, 0xff);
+            static Color rgb(U r, U g, U b) {
+                return rgba(r, g, b, 0xff);
             }
 
-            static Color from_rgb(uint32_t rgb) {
-                return from_rgba<uint8_t>((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, 0xff);
+            static Color rgb(uint32_t rgb) {
+                return rgba<uint8_t>((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, 0xff);
             }
 
-            template<typename C1, typename C2>
-            static std::enable_if_t<
-                    (std::is_same_v<std::remove_cv_t<C1>, Color> || std::is_same_v<std::remove_cv_t<C1>, uint32_t>)
-                    && (std::is_same_v<std::remove_cv_t<C2>, Color> || std::is_same_v<std::remove_cv_t<C2>, uint32_t>), Color>
-                    mix(const C1& c1, const C2& c2, value_type t) {
+            template<typename C1, typename C2, typename = std::enable_if_t<std::conjunction_v<std::is_convertible<C1, Color>, std::is_convertible<C2, Color>>>>
+            static Color mix(const C1& c1, const C2& c2, value_type t) {
                 return Color(c1) * (1 - t) + Color(c2) * t;
             }
 

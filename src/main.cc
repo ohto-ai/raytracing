@@ -1,5 +1,5 @@
-﻿#include "Ray.hh"
-#include "Color.hh"
+﻿#include "ray.hh"
+#include "color.hh"
 #include "point.hh"
 #include <easyx.h>
 
@@ -30,7 +30,7 @@ Color ray_color(const Ray& Light) {
     }
     auto unit_direction = Light.direction().normalized();
     const auto a = 0.5 * (unit_direction.y() + 1.0);
-    auto Result = Color::from_rgb(0xffffff).mix(Color::from_rgb(0x7fb2ff), a);
+    auto Result = Color::rgb(0xffffff).mix(Color::rgb(0x7fb2ff), a);
     return Result;
 }
 
