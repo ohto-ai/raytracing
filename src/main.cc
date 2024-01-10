@@ -3,10 +3,10 @@
 #include "point.hh"
 #include <easyx.h>
 
-using Ray = ohtoai::math::Rayf;
-using Color = ohtoai::color::Colorf;
-using Point3 = ohtoai::math::Point3f;
-using Vec3 = ohtoai::math::Vec3f;
+using Ray = ohtoai::math::Rayd;
+using Color = ohtoai::color::Colord;
+using Point3 = ohtoai::math::Point3d;
+using Vec3 = ohtoai::math::Vec3d;
 
 double hit_sphere(const Point3& center, double radius, const Ray& light) {
     Vec3 origin = light.origin() - center;

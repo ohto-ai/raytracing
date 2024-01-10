@@ -32,14 +32,14 @@ TEST_CASE("Verify Color::rgb, Color::rgba") {
     using Color = ohtoai::color::Colorf;
     Color c;
 
-    c = Color::from_rgb(0x11, 0x22, 0x33);
+    c = Color::rgb(0x11, 0x22, 0x33);
     REQUIRE(c.red() == 0x11);
     REQUIRE(c.green() == 0x22);
     REQUIRE(c.blue() == 0x33);
     REQUIRE(c.alpha() == 0xff);
     REQUIRE(c.to_easyx_color() == 0x332211);
 
-    c = Color::from_rgba(0x11, 0x22, 0x33, 0x44);
+    c = Color::rgba(0x11, 0x22, 0x33, 0x44);
     REQUIRE(c.red() == 0x11);
     REQUIRE(c.green() == 0x22);
     REQUIRE(c.blue() == 0x33);

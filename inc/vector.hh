@@ -231,6 +231,8 @@ namespace ohtoai {
 
         using Vec2f = Vector<float, 2>;
         using Vec3f = Vector<float, 3>;
+        using Vec2d = Vector<double, 2>;
+        using Vec3d = Vector<double, 3>;
     }
 }
 
