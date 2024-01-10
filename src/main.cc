@@ -35,6 +35,11 @@ Color ray_color(const Ray& Light) {
 
 
 int main() {
+    static_assert(std::is_trivial<Vec3>::value, "Vec3 must be trivial type");
+    static_assert(std::is_trivial<Point3>::value, "Point3 must be trivial type");
+    static_assert(std::is_trivial<Ray>::value, "Ray must be trivial type");
+    static_assert(std::is_trivial<Color>::value, "Color must be trivial type");
+
     const auto aspect_ratio = 16.0 / 9.0;
     const int image_width = 640;
     const int image_height = static_cast<int>(image_width / aspect_ratio);

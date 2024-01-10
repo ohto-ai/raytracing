@@ -11,19 +11,22 @@ namespace ohtoai {
         template <typename T>
         class Ray {
         public:
-            Ray() = default;
-            Ray(const Ray&) = default;
-            Ray(const Point3<T>& origin, const Vector<T, 3>& direction) : o(origin), d(direction) {}
-            Ray& operator=(const Ray&) = default;
+            constexpr Ray() = default;
+            constexpr Ray(const Ray&) = default;
+            constexpr Ray(Ray&&) = default;
+            constexpr Ray& operator=(const Ray&) = default;
+            constexpr Ray& operator=(Ray &&) = default;
             ~Ray() = default;
 
-            Point3<T> operator()(T t) const {
+            constexpr Ray(const Point3<T>& origin, const Vector<T, 3>& direction) : o(origin), d(direction) {}
+
+            constexpr Point3<T> operator()(T t) const {
                 return o + t * d;
             }
 
-            Point3<T> origin() const { return o; }
-            Vector<T, 3> direction() const { return d; }
-            Point3<T> at(T t) const { return o + t * d; }
+            constexpr Point3<T> origin() const { return o; }
+            constexpr Vector<T, 3> direction() const { return d; }
+            constexpr Point3<T> at(T t) const { return o + t * d; }
 
         private:
             Point3<T> o;

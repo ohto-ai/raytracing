@@ -17,6 +17,7 @@ namespace ohtoai {
         public:
             constexpr static size_t Dimension = D;
             using array_type = std::array<value_type, Dimension>;
+
             constexpr Vector() = default;
             constexpr Vector(const Vector&) = default;
             constexpr Vector(Vector&&) = default;
