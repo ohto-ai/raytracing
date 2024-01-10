@@ -5,7 +5,6 @@
 #define _OHTOAI_RAY_H_
 
 #include "vector.hh"
-#include "point.hh"
 
 namespace ohtoai {
     namespace math {

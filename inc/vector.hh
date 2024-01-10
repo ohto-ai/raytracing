@@ -8,25 +8,29 @@
 #include <algorithm>
 #include <numeric>
 #include <cmath>
+#include <array>
 
 namespace ohtoai {
     namespace math {
         template <typename T, size_t D>
-        class Vector {
+        class Vector: public std::array<T, D> {
         public:
-            using value_type = T;
-            Vector() = default;
-            Vector(const Vector&) = default;
-            template<typename... Args>
-            explicit Vector(Args ...args) {
-                static_assert(sizeof...(args) == D, "Number of arguments must match the vector size");
-                initializeElements(args...);
-            }
-            Vector& operator=(const Vector&) = default;
+            constexpr static size_t Dimension = D;
+            using array_type = std::array<value_type, Dimension>;
+            constexpr Vector() = default;
+            constexpr Vector(const Vector&) = default;
+            constexpr Vector(Vector&&) = default;
+            constexpr Vector& operator=(const Vector&) = default;
+            constexpr Vector& operator=(Vector &&) = default;
             ~Vector() = default;
 
+            template<typename... Args>
+            constexpr explicit Vector(Args ...args) : array_type {{static_cast<T>(args)...}} {
+                static_assert(sizeof...(args) == D, "Number of arguments must match the vector size");
+            }
+
             template<typename U>
-            Vector& assign(const Vector<U, D>& v) {
+            Vector& assign(const Vector<U, Dimension>& v) {
                 if constexpr (std::is_same_v<value_type, U>) {
                     return operator=(v);
                 } else {
@@ -34,41 +38,43 @@ namespace ohtoai {
                 }
             }
 
-            value_type& operator[](size_t i) { return e[i]; }
-            const value_type& operator[](size_t i) const { return e[i]; }
-
             template<typename U>
-            Vector& operator+=(const Vector<U, D>& v) {
-                std::transform(std::begin(e), std::end(e), std::begin(v.e), std::begin(e), std::plus());
+            Vector& operator+=(const Vector<U, Dimension>& v) {
+                std::transform(begin(), end(), v.begin(), begin(), std::plus());
                 return *this;
             }
 
             template<typename U>
-            Vector& operator-=(const Vector<U, D>& v) {
-                std::transform(std::begin(e), std::end(e), std::begin(v.e), std::begin(e), std::minus());
+            Vector& operator-=(const Vector<U, Dimension>& v) {
+                std::transform(begin(), end(), v.begin(), begin(), std::minus());
                 return *this;
             }
 
             template<typename U>
-            Vector& operator*=(const Vector<U, D>& v) {
-                std::transform(std::begin(e), std::end(e), std::begin(v.e), std::begin(e), std::multiplies());
+            Vector& operator*=(const Vector<U, Dimension>& v) {
+                std::transform(begin(), end(), v.begin(), begin(), std::multiplies());
                 return *this;
             }
 
             Vector& operator*=(const value_type& t) {
-                for (size_t i = 0; i < D; ++i)
-                    e[i] *= t;
+                for (size_t i = 0; i < Dimension; ++i)
+                    (*this)[i] *= t;
                 return *this;
             }
 
             Vector& operator/=(const value_type& t) {
-                for (size_t i = 0; i < D; ++i)
-                    e[i] /= t;
+                for (size_t i = 0; i < Dimension; ++i)
+                    (*this)[i] /= t;
+                return *this;
+            }
+
+            const Vector& operator-() const {
+                std::transform(begin(), end(), begin(), std::negate());
                 return *this;
             }
 
             auto length2() const {
-                return std::reduce(std::begin(e), std::end(e), value_type{}, [](const value_type& a, const value_type& b) { return a + b * b; });
+                return std::reduce(begin(), end(), value_type{}, [](const value_type& a, const value_type& b) { return a + b * b; });
             }
 
             auto length() const {
@@ -86,89 +92,35 @@ namespace ohtoai {
             }
 
             template<typename U>
-            typename std::common_type_t<T, U> dot(const Vector<U, D>& v) const {
-                return std::transform_reduce(std::begin(e), std::end(e), std::begin(v.e), std::common_type_t<T, U>{});
+            typename std::common_type_t<T, U> dot(const Vector<U, Dimension>& v) const {
+                return std::transform_reduce(begin(), end(), v.begin(), std::common_type_t<T, U>{});
             }
 
             template<typename U>
-            auto cross(const Vector<U, D>& v) const {
-                static_assert(D == 3, "Cross product is only defined for 3D vectors");
+            auto cross(const Vector<U, Dimension>& v) const {
+                static_assert(Dimension == 3, "Cross product is only defined for 3D vectors");
                 return createVector(
-                    e[1] * v.e[2] - e[2] * v.e[1],
-                    e[2] * v.e[0] - e[0] * v.e[2],
-                    e[0] * v.e[1] - e[1] * v.e[0]);
+                    (*this)[1] * v.(*this)[2] - (*this)[2] * v.(*this)[1],
+                    (*this)[2] * v.(*this)[0] - (*this)[0] * v.(*this)[2],
+                    (*this)[0] * v.(*this)[1] - (*this)[1] * v.(*this)[0]);
             }
 
-            constexpr size_t size() const { return D; }
+            constexpr size_t size() const { return Dimension; }
 
-            auto begin() { return std::begin(e); }
-            auto end() { return std::end(e); }
-            const auto begin() const { return std::begin(e); }
-            const auto end() const { return std::end(e); }
+            value_type& x() { return (*this)[0]; }
+            value_type& y() { return (*this)[1]; }
+            value_type& z() { return (*this)[2]; }
+            value_type& w() { return (*this)[3]; }
 
-            value_type& x() { return e[0]; }
-            value_type& y() { return e[1]; }
-            value_type& z() { return e[2]; }
-            value_type& w() { return e[3]; }
-
-            const value_type& x() const { return e[0]; }
-            const value_type& y() const { return e[1]; }
-            const value_type& z() const { return e[2]; }
-            const value_type& w() const { return e[3]; }
-        protected:
-            value_type e[D]{};
-
-            template<typename Arg, typename... Args>
-            void initializeElements(Arg first, Args... rest) {
-                e[D - sizeof...(Args) - 1] = static_cast<value_type>(first);
-                if constexpr (sizeof...(Args) > 0)
-                    initializeElements(rest...);
-            }
-
-            template <typename Arg, typename... Args>
-            friend auto createVector(Arg arg, Args... args);
-
-            template <typename T, size_t D>
-            friend const Vector<T, D>& operator-(const Vector<T, D>& v);
-
-            template<typename T, size_t D, typename U>
-            friend Vector<typename std::common_type_t<T, U>, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2);
-
-            template<typename T, size_t D, typename U>
-            friend Vector<typename std::common_type_t<T, U>, D> operator-(const Vector<T, D>& v1, const Vector<U, D>& v2);
-
-            template<typename T, size_t D>
-            friend Vector<T, D> operator*(const Vector<T, D>& v, const typename Vector<T, D>::value_type& t);
-
-            template<typename T, size_t D>
-            friend Vector<T, D> operator*(const typename Vector<T, D>::value_type& t, const Vector<T, D>& v);
-
-            template<typename T, size_t D>
-            friend Vector<T, D> operator/(const Vector<T, D>& v, const typename Vector<T, D>::value_type& t);
-
-            template<typename T, size_t D, typename U>
-            friend Vector<typename std::common_type_t<T, U>, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2);
-
-            template<typename T, size_t D, typename U>
-            friend bool operator==(const Vector<T, D>& v1, const Vector<U, D>& v2);
-
-            template<typename T, size_t D, typename U>
-            friend bool operator!=(const Vector<T, D>& v1, const Vector<U, D>& v2);
-
-            template<typename T, size_t D, typename U>
-            friend Vector<U, D> cast(const Vector<T, D>& v);
+            const value_type& x() const { return (*this)[0]; }
+            const value_type& y() const { return (*this)[1]; }
+            const value_type& z() const { return (*this)[2]; }
+            const value_type& w() const { return (*this)[3]; }
         };
 
         template <typename Arg, typename... Args>
-        auto createVector(Arg arg, Args... args) {
+        constexpr auto createVector(Arg arg, Args... args) {
             return Vector<Arg, sizeof...(args) + 1>(arg, args...);
-        }
-
-        template <typename T, size_t D>
-        const Vector<T, D>& operator-(const Vector<T, D>& v) {
-            auto _v(v)
-            std::transform(std::begin(_v), std::end(_v), std::begin(_v), std::negate());
-            return _v;
         }
 
         template<typename T, size_t D, typename U>
@@ -205,7 +157,7 @@ namespace ohtoai {
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type_t<T, U>, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type_t<T, U>, D> prod;
-            std::transform(std::begin(v1.e), std::end(v1.e), std::begin(v2.e), std::begin(prod.e), std::multiplies());
+            std::transform(v1.begin(), v1.end(), v2.begin(), prod.begin(), std::multiplies());
             return prod;
         }
 
@@ -233,6 +185,20 @@ namespace ohtoai {
         using Vec3f = Vector<float, 3>;
         using Vec2d = Vector<double, 2>;
         using Vec3d = Vector<double, 3>;
+        using Vec2i = Vector<int, 2>;
+        using Vec3i = Vector<int, 3>;
+
+        template <typename T>
+        using Point2 = Vector<T, 2>;
+        template <typename T>
+        using Point3 = Vector<T, 3>;
+
+        using Point2f = Point2<float>;
+        using Point3f = Point3<float>;
+        using Point2d = Point2<double>;
+        using Point3d = Point3<double>;
+        using Point2i = Point2<int>;
+        using Point3i = Point3<int>;
     }
 }
 

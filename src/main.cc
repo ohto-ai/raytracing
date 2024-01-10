@@ -1,6 +1,5 @@
 ﻿#include "ray.hh"
 #include "color.hh"
-#include "point.hh"
 #include <easyx.h>
 
 using Ray = ohtoai::math::Rayd;
@@ -36,7 +35,6 @@ Color ray_color(const Ray& Light) {
 
 
 int main() {
-
     const auto aspect_ratio = 16.0 / 9.0;
     const int image_width = 640;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
