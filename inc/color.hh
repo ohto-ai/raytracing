@@ -158,23 +158,6 @@ namespace ohtoai {
             constexpr auto mix(const C2& c2, value_type t) const {
                 return mix(*this, c2, t);
             }
-
-            // inline constexpr static Color Black    { 0x000000ff};
-            // inline constexpr static Color Blue			= 0x0000aaff;
-            // inline constexpr static Color Green			= 0x00aa00ff;
-            // inline constexpr static Color Cyan			= 0x00aaaaff;
-            // inline constexpr static Color Red			    = 0xaa0000ff;
-            // inline constexpr static Color Magenta		    = 0xaa00aaff;
-            // inline constexpr static Color Brown			= 0xaa5500ff;
-            // inline constexpr static Color LightGray		= 0xaaaaaaff;
-            // inline constexpr static Color DarkGray		= 0x555555ff;
-            // inline constexpr static Color LightBlue		= 0x5555ffff;
-            // inline constexpr static Color LightGreen		= 0x55ff55ff;
-            // inline constexpr static Color LightCyan		= 0x55ffffff;
-            // inline constexpr static Color LightRed		= 0xff5555ff;
-            // inline constexpr static Color LightMagenta	= 0xff55ffff;
-            // inline constexpr static Color Yellow			= 0xffff55ff;
-            // inline constexpr static Color White			= 0xffffffff;
         };
 
         template<typename T>
