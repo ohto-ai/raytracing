@@ -102,9 +102,9 @@ namespace ohtoai {
             auto cross(const Vector<U, Dimension>& v) const {
                 static_assert(Dimension == 3, "Cross product is only defined for 3D vectors");
                 return createVector(
-                    (*this)[1] * v.(*this)[2] - (*this)[2] * v.(*this)[1],
-                    (*this)[2] * v.(*this)[0] - (*this)[0] * v.(*this)[2],
-                    (*this)[0] * v.(*this)[1] - (*this)[1] * v.(*this)[0]);
+                    (*this)[1] * v[2] - (*this)[2] * v[1],
+                    (*this)[2] * v[0] - (*this)[0] * v[2],
+                    (*this)[0] * v[1] - (*this)[1] * v[0]);
             }
 
             constexpr size_t size() const { return Dimension; }
