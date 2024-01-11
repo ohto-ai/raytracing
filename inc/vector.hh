@@ -92,9 +92,7 @@ namespace ohtoai {
             template<typename U>
             auto cross(const Vector<U, Dimension>& v) const {
                 static_assert(Dimension == 3, "Cross product is only defined for 3D vectors");
-                template <typename Arg, typename... Args>
-                constexpr auto createVector(Arg arg, Args... args);
-                return createVector(
+                return Vector(
                     (*this)[1] * v[2] - (*this)[2] * v[1],
                     (*this)[2] * v[0] - (*this)[0] * v[2],
                     (*this)[0] * v[1] - (*this)[1] * v[0]);
