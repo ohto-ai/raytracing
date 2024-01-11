@@ -4,7 +4,8 @@
 #ifndef _OHTOAI_VECTOR_H_
 #define _OHTOAI_VECTOR_H_
 
-#include <type_traits>
+#include "type_base.hh"
+#include <functional>
 #include <algorithm>
 #include <numeric>
 #include <cmath>
@@ -62,7 +63,9 @@ namespace ohtoai {
             }
 
             const Vector& operator-() const {
-                std::transform(array_type::begin(), array_type::end(), array_type::begin(), std::negate());
+                static_assert(std::is_signed_v<value_type>, "Vector must be signed type");
+                Vector neg;
+                std::transform(array_type::begin(), array_type::end(), neg.begin(), std::negate());
                 return *this;
             }
 
@@ -168,12 +171,17 @@ namespace ohtoai {
             return !(v1 == v2);
         }
 
-        using Vec2f = Vector<float, 2>;
-        using Vec3f = Vector<float, 3>;
-        using Vec2d = Vector<double, 2>;
-        using Vec3d = Vector<double, 3>;
-        using Vec2i = Vector<int, 2>;
-        using Vec3i = Vector<int, 3>;
+        template <typename T>
+        using Vec2 = Vector<T, 2>;
+        template <typename T>
+        using Vec3 = Vector<T, 3>;
+
+        using Vec2f = Vec2<float>;
+        using Vec3f = Vec3<float>;
+        using Vec2d = Vec2<double>;
+        using Vec3d = Vec3<double>;
+        using Vec2i = Vec2<int>;
+        using Vec3i = Vec3<int>;
 
         template <typename T>
         using Point2 = Vector<T, 2>;

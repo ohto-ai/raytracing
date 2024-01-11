@@ -3,6 +3,7 @@
 
 |Title|Image|
 |-----|-----|
+|Sphere with ground|![](doc/img/sphere_with_ground.png)|
 |Normal|![](doc/img/normal.png)|
-|Red ball|![](doc/img/red_ball.png)|
+|Red sphere|![](doc/img/red_sphere.png)|
 |Sky box|![](doc/img/sky_box.png)|

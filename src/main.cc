@@ -1,11 +1,18 @@
 ﻿#include "ray.hh"
 #include "color.hh"
+#include "sphere.hh"
+#include "hittable_list.hh"
 #include <easyx.h>
 
-using Ray = ohtoai::math::Rayd;
-using Color = ohtoai::color::Colord;
-using Point3 = ohtoai::math::Point3d;
-using Vec3 = ohtoai::math::Vec3d;
+using value_type = double;
+using Ray = ohtoai::math::Ray<value_type>;
+using Color = ohtoai::color::Color<value_type>;
+using Point3 = ohtoai::math::Point3<value_type>;
+using Vec3 = ohtoai::math::Vec3<value_type>;
+using HitRecord = ohtoai::math::HitRecord<value_type>;
+using Hittable = ohtoai::math::Hittable<value_type>;
+using HittableList = ohtoai::math::HittableList<value_type>;
+using Sphere = ohtoai::math::Sphere<value_type>;
 
 double hit_sphere(const Point3& center, double radius, const Ray& light) {
     Vec3 origin = light.origin() - center;
@@ -20,14 +27,13 @@ double hit_sphere(const Point3& center, double radius, const Ray& light) {
     }
 }
 
-Color ray_color(const Ray& Light) {
-    const auto t = hit_sphere(Point3(0, 0, -1), 0.5, Light);
-    // 计算法线
-    if (t > 0) {
-        Vec3 Normal = (Light.at(t) - Vec3(0, 0, -1)).normalized();
-        return 255 * 0.5 * Color(Normal.x() + 1, Normal.y() + 1, Normal.z() + 1);
+Color ray_color(const Ray& light, const Hittable& world) {
+    HitRecord record;
+    if (world.hit(light, 0, std::numeric_limits<value_type>::infinity(), record)) {
+        return 0.5 * (Color(record.normal) + Color(1, 1, 1)) * 255;
     }
-    auto unit_direction = Light.direction().normalized();
+
+    auto unit_direction = light.direction().normalized();
     const auto a = 0.5 * (unit_direction.y() + 1.0);
     auto Result = Color::rgb(0xffffff).mix(Color::rgb(0x7fb2ff), a);
     return Result;
@@ -60,6 +66,14 @@ int main() {
 
     initgraph(image_width, image_height);
     BeginBatchDraw();
+
+    HittableList world;
+    auto ground_sphere = std::make_shared<Sphere>(Point3(0, 0, -1), 0.5);
+    auto fake_ground = std::make_shared<Sphere>(Point3(0, -100.5, -1), 100);
+
+    world.add(ground_sphere);
+    world.add(fake_ground);
+
     // 渲染部分
     for (int y = 0; y < image_height; ++y) {
         const auto height_vec = static_cast<float>(y) * pixel_delta_v;
@@ -67,7 +81,7 @@ int main() {
             auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
             const auto Ray_direction = pixel_center - camera_center;
             Ray light(camera_center, Ray_direction);
-            auto write_Color = ray_color(light);
+            auto write_Color = ray_color(light, world);
             putpixel(x, y, write_Color.to_easyx_color());
         }
     }
