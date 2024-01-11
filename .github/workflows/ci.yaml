@@ -40,17 +40,14 @@ jobs:
 
     - name: Configure CMake
       id: config
-      shell: bash
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
     - name: Build
       id: build
-      shell: bash
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target ${{ matrix.target }}
     - name: Test
-      shell: bash
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
     - name: Setup tmate session
