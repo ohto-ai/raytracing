@@ -1,6 +1,13 @@
 #include "color.hh"
 #include <catch2/catch.hpp>
 
+TEST_CASE("Color Basic") {
+    REQUIRE(std::is_trivial<ohtoai::color::Color<int>>::value);
+    REQUIRE(std::is_trivial<ohtoai::color::Color<uint8_t>>::value);
+    REQUIRE(std::is_trivial<ohtoai::color::Color<float>>::value);
+    REQUIRE(std::is_trivial<ohtoai::color::Color<double>>::value);
+}
+
 TEST_CASE("Verify Color endian") {
     using Color = ohtoai::color::Colorf;
     Color c(0x11223344);

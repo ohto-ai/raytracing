@@ -1,6 +1,12 @@
 #include "vector.hh"
 #include <catch2/catch.hpp>
 
+TEST_CASE("Vector Basic") {
+    REQUIRE(std::is_trivial<ohtoai::math::Vector<int, 3>>::value);
+    REQUIRE(std::is_trivial<ohtoai::math::Vector<float, 3>>::value);
+    REQUIRE(std::is_trivial<ohtoai::math::Vector<double, 3>>::value);
+}
+
 TEST_CASE("Verify Vector operator") {
     using ohtoai::math::Vector;
     Vector<int, 3> v1(1, 2, 3);
