@@ -1,0 +1,58 @@
+name: Cross-platform CI & Release
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci.yaml'
+      - 'src/*'
+      - 'inc/*'
+      - 'CMakeLists.txt'
+      - '*.cmake'
+  pull_request:
+    paths:
+      - '.github/workflows/ci.yaml'
+      - 'src/*'
+      - 'inc/*'
+      - 'CMakeLists.txt'
+      - '*.cmake'
+  workflow_dispatch:
+jobs:
+  build:
+    name: CI
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_type: [Debug, Release]
+        target: [test]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+        fetch-depth: 1
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Configure CMake
+      id: config
+      shell: bash
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
+    - name: Build
+      id: build
+      shell: bash
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target ${{ matrix.target }}
+    - name: Test
+      shell: bash
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ failure() }}

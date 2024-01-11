@@ -8,6 +8,7 @@ include_directories(${CMAKE_SOURCE_DIR}/inc)
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
 enable_testing()
+add_custom_target(${PROJECT_NAME} ALL)
 
 # Add test files
 file(GLOB test_files "*.test.cc")
@@ -18,4 +19,5 @@ foreach (test_file ${test_files})
     target_compile_definitions(${test_name} PRIVATE CATCH_CONFIG_ENABLE_BENCHMARKING)
     add_test(NAME ${test_name} COMMAND ${test_name})
     target_link_libraries (${test_name} PRIVATE Threads::Threads)
+    add_dependencies(${PROJECT_NAME} ${test_name})
 endforeach ()
