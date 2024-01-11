@@ -15,8 +15,9 @@ namespace ohtoai {
         template <typename T, size_t D>
         class Vector: public std::array<T, D> {
         public:
+            using array_type = std::array<T, D>;
+            using typename array_type::value_type;
             constexpr static size_t Dimension = D;
-            using array_type = std::array<value_type, Dimension>;
 
             constexpr Vector() = default;
             constexpr Vector(const Vector&) = default;
