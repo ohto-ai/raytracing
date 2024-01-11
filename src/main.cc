@@ -3,6 +3,9 @@
 #include "sphere.hh"
 #include "hittable_list.hh"
 #include <easyx.h>
+#include <spdlog/fmt/fmt.h>
+#include <chrono>
+#include <thread>
 
 using value_type = double;
 using Ray = ohtoai::math::Ray<value_type>;
@@ -74,19 +77,40 @@ int main() {
     world.add(ground_sphere);
     world.add(fake_ground);
 
-    // 渲染部分
-    for (int y = 0; y < image_height; ++y) {
-        const auto height_vec = static_cast<float>(y) * pixel_delta_v;
-        for (int x = 0; x < image_width; ++x) {
-            auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
-            const auto Ray_direction = pixel_center - camera_center;
-            Ray light(camera_center, Ray_direction);
-            auto write_Color = ray_color(light, world);
-            putpixel(x, y, write_Color.to_easyx_color());
+    auto pixel_buff = GetImageBuffer(nullptr);
+
+    auto render = [&]{
+        // 渲染部分
+        for (int y = 0; y < image_height; ++y) {
+            const auto height_vec = static_cast<float>(y) * pixel_delta_v;
+            for (int x = 0; x < image_width; ++x) {
+                auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
+                const auto Ray_direction = pixel_center - camera_center;
+                Ray light(camera_center, Ray_direction);
+                auto write_Color = ray_color(light, world);
+                pixel_buff[y * image_width + x] = write_Color.to_rgb();
+            }
         }
+    };
+
+    // calc FPS
+    auto last_frame_time = std::chrono::steady_clock::now();
+    while (true) {
+        render();
+        auto now = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_frame_time);
+        last_frame_time = now;
+        auto fps = 1000.0 / duration.count();
+        outtextxy(0, 0, fmt::format("FPS: {:.2f}", fps).c_str());
+        FlushBatchDraw();
+        if (GetAsyncKeyState(VK_ESCAPE)) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+
     EndBatchDraw();
-    system("pause");
+    closegraph();
     return 0;
 }
 
