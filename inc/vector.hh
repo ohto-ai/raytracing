@@ -33,19 +33,19 @@ namespace ohtoai {
 
             template<typename U>
             Vector& operator+=(const Vector<U, Dimension>& v) {
-                std::transform(begin(), end(), v.begin(), begin(), std::plus());
+                std::transform(array_type::begin(), array_type::end(), v.begin(), array_type::begin(), std::plus());
                 return *this;
             }
 
             template<typename U>
             Vector& operator-=(const Vector<U, Dimension>& v) {
-                std::transform(begin(), end(), v.begin(), begin(), std::minus());
+                std::transform(array_type::begin(), array_type::end(), v.begin(), array_type::begin(), std::minus());
                 return *this;
             }
 
             template<typename U>
             Vector& operator*=(const Vector<U, Dimension>& v) {
-                std::transform(begin(), end(), v.begin(), begin(), std::multiplies());
+                std::transform(array_type::begin(), array_type::end(), v.begin(), array_type::begin(), std::multiplies());
                 return *this;
             }
 
@@ -62,12 +62,12 @@ namespace ohtoai {
             }
 
             const Vector& operator-() const {
-                std::transform(begin(), end(), begin(), std::negate());
+                std::transform(array_type::begin(), array_type::end(), array_type::begin(), std::negate());
                 return *this;
             }
 
             auto length2() const {
-                return std::reduce(begin(), end(), value_type{}, [](const value_type& a, const value_type& b) { return a + b * b; });
+                return std::reduce(array_type::begin(), array_type::end(), value_type{}, [](const value_type& a, const value_type& b) { return a + b * b; });
             }
 
             auto length() const {
@@ -86,7 +86,7 @@ namespace ohtoai {
 
             template<typename U>
             typename std::common_type_t<T, U> dot(const Vector<U, Dimension>& v) const {
-                return std::transform_reduce(begin(), end(), v.begin(), std::common_type_t<T, U>{});
+                return std::transform_reduce(array_type::begin(), array_type::end(), v.array_type::begin(), std::common_type_t<T, U>{});
             }
 
             template<typename U>
@@ -119,14 +119,14 @@ namespace ohtoai {
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type_t<T, U>, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type_t<T, U>, D> sum;
-            std::transform(std::begin(v1), std::end(v1), std::begin(v2), std::begin(sum), std::plus());
+            std::transform(v1.begin(), v1.end(), v2.begin(), sum.begin(), std::plus());
             return sum;
         }
 
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type_t<T, U>, D> operator-(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type_t<T, U>, D> diff;
-            std::transform(std::begin(v1), std::end(v1), std::begin(v2), std::begin(diff), std::minus());
+            std::transform(v1.begin(), v1.end(), v2.begin(), diff.begin(), std::minus());
             return diff;
         }
 
@@ -150,7 +150,7 @@ namespace ohtoai {
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type_t<T, U>, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type_t<T, U>, D> prod;
-            std::transform(v1.begin(), v1.end(), v2.begin(), prod.begin(), std::multiplies());
+            std::transform(v1.array_type::begin(), v1.array_type::end(), v2.array_type::begin(), prod.array_type::begin(), std::multiplies());
             return prod;
         }
 
