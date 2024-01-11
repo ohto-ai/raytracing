@@ -1,4 +1,4 @@
-name: Cross-platform CI & Release
+name: Cross-platform CI
 
 on:
   push:
