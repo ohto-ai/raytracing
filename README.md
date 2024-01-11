@@ -1,4 +1,5 @@
 # raytracing
+[![Cross-platform CI & Release](https://github.com/ohto-ai/raytracing/actions/workflows/ci.yaml/badge.svg)](https://github.com/ohto-ai/raytracing/actions/workflows/ci.yaml)
 
 |Title|Image|
 |-----|-----|
