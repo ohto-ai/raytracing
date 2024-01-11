@@ -86,7 +86,7 @@ namespace ohtoai {
 
             template<typename U>
             typename std::common_type_t<T, U> dot(const Vector<U, Dimension>& v) const {
-                return std::transform_reduce(array_type::begin(), array_type::end(), v.array_type::begin(), std::common_type_t<T, U>{});
+                return std::transform_reduce(array_type::begin(), array_type::end(), v.begin(), std::common_type_t<T, U>{});
             }
 
             template<typename U>
@@ -151,7 +151,7 @@ namespace ohtoai {
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type_t<T, U>, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             Vector<typename std::common_type_t<T, U>, D> prod;
-            std::transform(v1.array_type::begin(), v1.array_type::end(), v2.array_type::begin(), prod.array_type::begin(), std::multiplies());
+            std::transform(v1.begin(), v1.end(), v2.begin(), prod.begin(), std::multiplies());
             return prod;
         }
 
