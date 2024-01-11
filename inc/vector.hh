@@ -32,15 +32,6 @@ namespace ohtoai {
             }
 
             template<typename U>
-            Vector& assign(const Vector<U, Dimension>& v) {
-                if constexpr (std::is_same_v<value_type, U>) {
-                    return operator=(v);
-                } else {
-                    return operator=(cast<value_type>(v));
-                }
-            }
-
-            template<typename U>
             Vector& operator+=(const Vector<U, Dimension>& v) {
                 std::transform(begin(), end(), v.begin(), begin(), std::plus());
                 return *this;
@@ -174,13 +165,6 @@ namespace ohtoai {
         template<typename T, size_t D, typename U>
         bool operator!=(const Vector<T, D>& v1, const Vector<U, D>& v2) {
             return !(v1 == v2);
-        }
-
-        template<typename T, size_t D, typename U>
-        Vector<U, D> cast(const Vector<T, D>& v) {
-            Vector<U, D> _v;
-            std::transform(std::begin(v), std::end(v), std::begin(_v), [](const T& t) { return static_cast<U>(t); });
-            return _v;
         }
 
         using Vec2f = Vector<float, 2>;
