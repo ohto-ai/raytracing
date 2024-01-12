@@ -7,6 +7,9 @@
 #include <type_traits>
 #include <limits>
 #include <memory>
+#if __cplusplus > 202002L
+#include <numbers>
+#endif
 
 namespace ohtoai{
     namespace type {
