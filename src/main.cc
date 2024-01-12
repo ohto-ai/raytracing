@@ -9,7 +9,7 @@
 #include <thread>
 #define EXPORT_PPM
 #define EXPORT_PNG
-// #define EXPORT_EASYX
+#define EXPORT_EASYX
 
 
 #if defined(EXPORT_EASYX)
@@ -36,14 +36,38 @@ int main() {
     camera.image_width = 640;
     camera.image_height = 360;
     camera.samples_per_pixel = 100;
+    camera.max_depth = 50;
 #if defined(EX_SHOWCONSOLE) && defined(EXPORT_EASYX)
     initgraph(camera.image_width, camera.image_height);
     BeginBatchDraw();
+#endif
+#if defined(EXPORT_PPM)
+    // render ppm
+    std::ofstream ppm_file("render.ppm");
+    ppm_file << fmt::format("P3\n{} {}\n255\n", camera.image_width, camera.image_height);
+#endif
+
+#if defined(EXPORT_PNG)
+    // render png
+    FILE* png_file = fopen("render.png", "wb");
+    auto png_data = new unsigned char[camera.image_width * camera.image_height * 3];
+#endif
 
     camera.render(world, [&](int x, int y, const auto& color) {
+#if defined(EX_SHOWCONSOLE) && defined(EXPORT_EASYX)
         putpixel(x, y, color.to_easyx_color());
+#endif
+#if defined(EXPORT_PPM)
+        ppm_file << fmt::format("{} {} {}\n", color.red<int>(), color.green<int>(), color.blue<int>());
+#endif
+#if defined(EXPORT_PNG)
+        auto index = (y * camera.image_width + x) * 3;
+        png_data[index] = color.red<int>();
+        png_data[index + 1] = color.green<int>();
+        png_data[index + 2] = color.blue<int>();
+#endif
     });
-
+#if defined(EX_SHOWCONSOLE) && defined(EXPORT_EASYX)
     EndBatchDraw();
     while(true) {
         if (GetAsyncKeyState(VK_ESCAPE)) {
@@ -54,29 +78,12 @@ int main() {
     closegraph();
 #endif
 #if defined(EXPORT_PPM)
-    // render ppm
-    std::ofstream ppm_file("render.ppm");
-    ppm_file << fmt::format("P3\n{} {}\n255\n", camera.image_width, camera.image_height);
-    camera.render(world, [&](int x, int y, const auto& color) {
-        ppm_file << fmt::format("{} {} {}\n", color.red<int>(), color.green<int>(), color.blue<int>());
-    });
     ppm_file.close();
 #endif
 #if defined(EXPORT_PNG)
-    // render png
-    FILE* png_file = fopen("render.png", "wb");
-    auto png_data = new unsigned char[camera.image_width * camera.image_height * 3];
-    if (png_data != nullptr) {
-        camera.render(world, [&](int x, int y, const auto& color) {
-            auto index = (y * camera.image_width + x) * 3;
-            png_data[index] = color.red<int>();
-            png_data[index + 1] = color.green<int>();
-            png_data[index + 2] = color.blue<int>();
-        });
-        svpng(png_file, camera.image_width, camera.image_height, png_data, false);
-        fclose(png_file);
-        delete[] png_data;
-    }
+    svpng(png_file, camera.image_width, camera.image_height, png_data, false);
+    fclose(png_file);
+    delete[] png_data;
 #endif
     return 0;
 }

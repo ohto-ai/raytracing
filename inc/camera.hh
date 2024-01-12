@@ -32,7 +32,7 @@ namespace ohtoai{
                         color_type pixel_color {};
                         for (int s = 0; s < samples_per_pixel; ++s) {
                             auto ray = get_ray(x, y, height_vec);
-                            pixel_color += ray_color(ray, world) * 255;
+                            pixel_color += ray_color(ray, max_depth, world) * 255;
                         }
                         pixel_color /= samples_per_pixel;
                         func(x, y, pixel_color);
@@ -40,11 +40,14 @@ namespace ohtoai{
                 }
             }
 
-            color_type ray_color(const ray_type& light, const hittable_type& world) {
+            color_type ray_color(const ray_type& light, int depth, const hittable_type& world) {
                 hit_record_type record;
-                if (world.hit(light, make_interval(0.0, ohtoai::math::constants::infinity), record)) {
+                if (depth <=0 ) {
+                    return {};
+                }
+                if (world.hit(light, make_interval(0.001, ohtoai::math::constants::infinity), record)) {
                     vector_type direction = generate_random_vector_on_hemisphere(record.normal);
-                    return 0.5 * ray_color(ray_type(record.point, direction), world);
+                    return 0.5 * ray_color(ray_type(record.point, direction), depth - 1, world);
                 }
 
                 // background
@@ -58,6 +61,7 @@ namespace ohtoai{
             int image_height = 360;
             value_type aspect_ratio = 16.0 / 9.0;
             int samples_per_pixel = 10;
+            int max_depth = 10;
 
         protected:
             void initialize() {
