@@ -17,6 +17,8 @@ if(WIN32)
   add_compile_definitions(WIN32_LEAN_AND_MEAN)
   add_compile_definitions(NOMINMAX)
 endif(WIN32)
+add_compile_definitions(SPDLOG_FMT_EXTERNAL)
+add_compile_definitions(FMT_HEADER_ONLY)
 
 target_include_directories(${PROJECT_NAME} PRIVATE 3rd/inc)
 target_include_directories(${PROJECT_NAME} PRIVATE inc)
