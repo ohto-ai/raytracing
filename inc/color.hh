@@ -10,7 +10,7 @@
 #include <type_traits>
 
 namespace ohtoai {
-    namespace color {
+    namespace math {
         // RGBA
         template<typename T>
         class Color : protected math::Vector<T, 4> {
