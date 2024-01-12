@@ -122,13 +122,19 @@ namespace ohtoai {
                 return to_bgr();
             }
 
-            constexpr value_type red() const { return (*this)[0]; }
-            constexpr value_type green() const { return (*this)[1]; }
-            constexpr value_type blue() const { return (*this)[2]; }
-            constexpr value_type alpha() const { return (*this)[3]; }
-            value_type& red() { return (*this)[0]; }
+            constexpr value_type red()      const { return (*this)[0]; }
+            constexpr value_type green()    const { return (*this)[1]; }
+            constexpr value_type blue()     const { return (*this)[2]; }
+            constexpr value_type alpha()    const { return (*this)[3]; }
+
+            template <typename U> constexpr U red()     const { return static_cast<U>(red()); }
+            template <typename U> constexpr U green()   const { return static_cast<U>(green()); }
+            template <typename U> constexpr U blue()    const { return static_cast<U>(blue()); }
+            template <typename U> constexpr U alpha()   const { return static_cast<U>(alpha()); }
+
+            value_type& red()   { return (*this)[0]; }
             value_type& green() { return (*this)[1]; }
-            value_type& blue() { return (*this)[2]; }
+            value_type& blue()  { return (*this)[2]; }
             value_type& alpha() { return (*this)[3]; }
 
             template<typename U = uint8_t>
