@@ -38,7 +38,6 @@ namespace ohtoai{
             inline constexpr auto infinity = std::numeric_limits<double>::infinity();
         }
 
-
         inline double degrees_to_radians(double degrees) {
             return degrees * constants::pi / 180.0;
         }

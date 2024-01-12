@@ -75,27 +75,15 @@ namespace ohtoai {
             template <int r_index, int g_index, int b_index, int a_index
                     , uint8_t r_mask = 0xff, uint8_t g_mask = 0xff, uint8_t b_mask = 0xff, uint8_t a_mask = 0xff>
             constexpr uint32_t to_color() const {
-                auto r = static_cast<int>(red());
-                auto g = static_cast<int>(green());
-                auto b = static_cast<int>(blue());
-                auto a = static_cast<int>(alpha());
-                if (r < 0)
-                    r = 0;
-                else if (r > 0xff)
-                    r = 0xff;
-                if (g < 0)
-                    g = 0;
-                else if (g > 0xff)
-                    g = 0xff;
-                if (b < 0)
-                    b = 0;
-                else if (b > 0xff)
-                    b = 0xff;
-                if (a < 0)
-                    a = 0;
-                else if (a > 0xff)
-                    a = 0xff;
+                auto r = std::clamp(red<int>(), 0, 255);
+                auto g = std::clamp(green<int>(), 0, 255);
+                auto b = std::clamp(blue<int>(), 0, 255);
+                auto a = std::clamp(alpha<int>(), 0, 255);
                 return static_cast<uint32_t>(((r & r_mask) << r_index ) | ((g & g_mask) << g_index) | ((b & b_mask) << b_index) | ((a & a_mask) << a_index));
+            }
+
+            constexpr Color clamp(value_type max = value_type{255}) const {
+                return Color(std::clamp(red(), value_type{}, value_type{255}), std::clamp(green(), value_type{}, value_type{255}), std::clamp(blue(), value_type{}, value_type{255}), std::clamp(alpha(), value_type{}, value_type{255}));
             }
 
             constexpr uint32_t to_rgba() const {
