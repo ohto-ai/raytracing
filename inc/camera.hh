@@ -46,7 +46,7 @@ namespace ohtoai{
                     return {};
                 }
                 if (world.hit(light, make_interval(0.001, ohtoai::math::constants::infinity), record)) {
-                    vector_type direction = generate_random_vector_on_hemisphere(record.normal);
+                    vector_type direction = record.normal + generate_random_vector_on_sphere<value_type>();
                     return 0.5 * ray_color(ray_type(record.point, direction), depth - 1, world);
                 }
 

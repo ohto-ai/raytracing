@@ -3,6 +3,7 @@
 
 |           Title            |                    Image                    |
 | -------------------------- | ------------------------------------------- |
+| Lambertian distribution    | ![](doc/img/lambertian_distribution.png)    |
 | Diffuse reflection Enhance | ![](doc/img/diffuse_reflection_enhance.png) |
 | Diffuse reflection         | ![](doc/img/diffuse_reflection.png)         |
 | Samples per pixel          | ![](doc/img/samples_per_pixel.png)          |
