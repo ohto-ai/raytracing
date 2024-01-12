@@ -7,3 +7,6 @@
 |Normal|![](doc/img/normal.png)|
 |Red sphere|![](doc/img/red_sphere.png)|
 |Sky box|![](doc/img/sky_box.png)|
+
+## Render
+![PPM](doc/img/render_sphere_with_ground.png)
