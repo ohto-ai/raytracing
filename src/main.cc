@@ -27,7 +27,7 @@ using Sphere = ohtoai::math::Sphere<value_type>;
 Color ray_color(const Ray& light, const Hittable& world) {
     HitRecord record;
     if (world.hit(light, 0, ohtoai::math::constants::infinity, record)) {
-        return 0.5 * (Color(record.normal) + Color(1, 1, 1)) * 255;
+        return Color::rgb(0xffffff).mix(Color(record.normal * 255));
     }
 
     // background
@@ -73,15 +73,15 @@ int main() {
 
 #if USE_EASYX
     auto render = [&]{
-        // 渲染部分
+        DWORD* buffer = GetImageBuffer(nullptr);
         for (int y = 0; y < image_height; ++y) {
-            const auto height_vec = static_cast<float>(y) * pixel_delta_v;
+            const auto height_vec = y * pixel_delta_v;
             for (int x = 0; x < image_width; ++x) {
-                auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
+                auto pixel_center = pixel100_loc + (x * pixel_delta_u) + height_vec;
                 const auto Ray_direction = pixel_center - camera_center;
                 Ray light(camera_center, Ray_direction);
                 auto write_Color = ray_color(light, world);
-                putpixel(x, y, write_Color.to_easyx());
+                buffer[y * image_width + x] = write_Color.to_rgb();
             }
         }
     };
@@ -95,7 +95,7 @@ int main() {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_frame_time);
         last_frame_time = now;
         auto fps = 1000.0 / duration.count();
-        outtextxy(0, 0, fmt::format("FPS: {:.2f}", fps).c_str());
+        outtextxy(0, 0, fmt::format("FPS: {:.2f}, Duration {} ms", fps, duration.count()).c_str());
         FlushBatchDraw();
         if (GetAsyncKeyState(VK_ESCAPE)) {
             break;
@@ -110,9 +110,9 @@ int main() {
     std::ofstream ppm_file("render.ppm");
     ppm_file << fmt::format("P3\n{} {}\n255\n", image_width, image_height);
     for (int y = 0; y < image_height; ++y) {
-        const auto height_vec = static_cast<float>(y) * pixel_delta_v;
+        const auto height_vec = y * pixel_delta_v;
         for (int x = 0; x < image_width; ++x) {
-            auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
+            auto pixel_center = pixel100_loc + (x * pixel_delta_u) + height_vec;
             const auto Ray_direction = pixel_center - camera_center;
             Ray light(camera_center, Ray_direction);
             auto write_Color = ray_color(light, world);
@@ -126,9 +126,9 @@ int main() {
     unsigned char* png_data = nullptr;
     png_data = new unsigned char[image_width * image_height * 3];
     for (int y = 0; y < image_height; ++y) {
-        const auto height_vec = static_cast<float>(y) * pixel_delta_v;
+        const auto height_vec = y * pixel_delta_v;
         for (int x = 0; x < image_width; ++x) {
-            auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
+            auto pixel_center = pixel100_loc + (x * pixel_delta_u) + height_vec;
             const auto Ray_direction = pixel_center - camera_center;
             Ray light(camera_center, Ray_direction);
             auto write_Color = ray_color(light, world);

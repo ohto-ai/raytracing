@@ -144,12 +144,12 @@ namespace ohtoai {
             }
 
             template<typename C1, typename C2, typename = std::enable_if_t<std::conjunction_v<std::is_convertible<C1, Color>, std::is_convertible<C2, Color>>>>
-            constexpr static Color mix(const C1& c1, const C2& c2, value_type t) {
+            constexpr static Color mix(const C1& c1, const C2& c2, double t = 0.5) {
                 return Color(c1) * (1 - t) + Color(c2) * t;
             }
 
             template<typename C2>
-            constexpr auto mix(const C2& c2, value_type t) const {
+            constexpr auto mix(const C2& c2, double t = 0.5) const {
                 return mix(*this, c2, t);
             }
         };
