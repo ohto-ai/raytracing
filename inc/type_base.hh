@@ -6,7 +6,6 @@
 
 #include <type_traits>
 #include <limits>
-#include <numbers>
 #include <memory>
 
 namespace ohtoai{
@@ -26,8 +25,18 @@ namespace ohtoai{
     }
 
     namespace math {
+        namespace constants {
+        // if cpp version > c++20, use std::numbers::pi
+        #if __cplusplus > 202002L
+            inline constexpr double pi = std::numbers::pi_v<double>;
+        #else
+            inline constexpr double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067;
+        #endif
+        }
+
+
         inline double degrees_to_radians(double degrees) {
-            return degrees * std::numbers::pi / 180.0;
+            return degrees * constants::pi / 180.0;
         }
     }
 }

@@ -3,7 +3,9 @@
 project(raytracing LANGUAGES CXX )
 
 find_package(Threads REQUIRED)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Add source files
 set(SOURCES src/main.cc)
