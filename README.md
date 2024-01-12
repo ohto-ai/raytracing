@@ -9,4 +9,4 @@
 |Sky box|![](doc/img/sky_box.png)|
 
 ## Render
-![PPM](doc/img/render_sphere_with_ground.png)
+![PPM](doc/img/render.png)
