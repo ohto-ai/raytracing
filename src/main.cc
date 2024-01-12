@@ -24,19 +24,6 @@ using Hittable = ohtoai::math::Hittable<value_type>;
 using HittableList = ohtoai::math::HittableList<value_type>;
 using Sphere = ohtoai::math::Sphere<value_type>;
 
-double hit_sphere(const Point3& center, double radius, const Ray& light) {
-    Vec3 origin = light.origin() - center;
-    const auto a = light.direction().dot(light.direction());
-    const auto b = 2.0 * origin.dot(light.direction());
-    const auto c = origin.dot(origin) - radius * radius;
-    const auto delta = b * b - 4 * a * c;
-    if (delta < 0) {
-        return -1.0;
-    } else {
-        return (-b - sqrt(delta)) / (2.0 * a);
-    }
-}
-
 Color ray_color(const Ray& light, const Hittable& world) {
     HitRecord record;
     if (world.hit(light, 0, ohtoai::math::constants::infinity, record)) {
