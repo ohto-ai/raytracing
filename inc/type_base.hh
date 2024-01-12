@@ -28,7 +28,7 @@ namespace ohtoai{
         namespace constants {
         // if cpp version > c++20, use std::numbers::pi
         #if __cplusplus > 202002L
-            inline constexpr double pi = std::numbers::pi_v<double>;
+            using std::numbers::pi;
         #else
             inline constexpr double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067;
         #endif
