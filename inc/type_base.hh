@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <limits>
 #include <memory>
+#include <random>
 #if __cplusplus > 202002L
 #include <numbers>
 #endif
@@ -40,6 +41,12 @@ namespace ohtoai{
 
         inline double degrees_to_radians(double degrees) {
             return degrees * constants::pi / 180.0;
+        }
+
+        static inline std::mt19937 random_gen = std::mt19937(std::random_device()());
+        inline double random_double(std::mt19937& gen, double min, double max) {
+            std::uniform_real_distribution<double> dis(min, max);
+            return dis(gen);
         }
     }
 }

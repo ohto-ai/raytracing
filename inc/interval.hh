@@ -36,6 +36,11 @@ namespace ohtoai{
             constexpr bool is_empty() const {
                 return min_ > max_;
             }
+
+            constexpr value_type clamp(value_type value) const {
+                return std::clamp(value, min_, max_);
+            }
+
             protected:
                 value_type min_;
                 value_type max_;
