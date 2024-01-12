@@ -116,7 +116,7 @@ namespace ohtoai {
         };
 
         template <typename Arg, typename... Args>
-        constexpr auto createVector(Arg arg, Args... args) {
+        constexpr auto make_vector(Arg arg, Args... args) {
             return Vector<Arg, sizeof...(args) + 1>(arg, args...);
         }
 

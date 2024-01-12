@@ -17,6 +17,7 @@ namespace ohtoai{
             using ray_type = Ray<T>;
             using hit_record_type = HitRecord<T>;
             using hittable_type = Hittable<T>;
+            using interval_type = Interval<T>;
 
             HittableList() = default;
             explicit HittableList(const std::shared_ptr<hittable_type>& object) { add(object); }
@@ -24,13 +25,13 @@ namespace ohtoai{
             void clear() { objects_.clear(); }
             void add(const std::shared_ptr<hittable_type>& object) { objects_.push_back(object); }
 
-            virtual bool hit(const ray_type& light, value_type ray_min, value_type ray_max, hit_record_type& rec) const override {
+            virtual bool hit(const ray_type& light, const interval_type& ray_range, hit_record_type& rec) const override {
                 hit_record_type temp_rec;
                 bool hit_anything = false;
-                auto closest_so_far = ray_max;
+                auto closest_so_far = ray_range.max();
 
                 for (const auto& object : objects_) {
-                    if (object->hit(light, ray_min, closest_so_far, temp_rec)) {
+                    if (object->hit(light, make_interval(ray_range.min(), closest_so_far), temp_rec)) {
                         hit_anything = true;
                         closest_so_far = temp_rec.t;
                         rec = temp_rec;

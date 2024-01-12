@@ -6,6 +6,7 @@
 
 #include "vector.hh"
 #include "ray.hh"
+#include "interval.hh"
 
 namespace ohtoai{
     namespace math {
@@ -36,8 +37,10 @@ namespace ohtoai{
             using point_type = Point3<T>;
             using vector_type = Vec3<T>;
             using hit_record_type = HitRecord<T>;
+            using ray_type = Ray<T>;
+            using interval_type = Interval<T>;
 
-            virtual bool hit(const Ray<T>& light, T ray_min, T ray_max, hit_record_type& rec) const = 0;
+            virtual bool hit(const ray_type& light, const interval_type& ray_range , hit_record_type& rec) const = 0;
         };
     }
 }

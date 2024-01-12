@@ -23,10 +23,12 @@ using HitRecord = ohtoai::math::HitRecord<value_type>;
 using Hittable = ohtoai::math::Hittable<value_type>;
 using HittableList = ohtoai::math::HittableList<value_type>;
 using Sphere = ohtoai::math::Sphere<value_type>;
+using Interval = ohtoai::math::Interval<value_type>;
+using ohtoai::math::make_interval;
 
 Color ray_color(const Ray& light, const Hittable& world) {
     HitRecord record;
-    if (world.hit(light, 0, ohtoai::math::constants::infinity, record)) {
+    if (world.hit(light, make_interval(0.0, ohtoai::math::constants::infinity), record)) {
         return Color::rgb(0xffffff).mix(Color(record.normal * 255));
     }
 
