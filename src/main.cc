@@ -2,10 +2,17 @@
 #include "color.hh"
 #include "sphere.hh"
 #include "hittable_list.hh"
-#include <easyx.h>
 #include <spdlog/fmt/fmt.h>
 #include <chrono>
 #include <thread>
+#if defined(_MSC_VER) && !defined(__clang__)
+#include <easyx.h>
+#define USE_EASYX true
+#else
+#include <fstream>
+#include <svpng/svpng.inc>
+#define USE_EASYX false
+#endif
 
 using value_type = double;
 using Ray = ohtoai::math::Ray<value_type>;
@@ -32,10 +39,11 @@ double hit_sphere(const Point3& center, double radius, const Ray& light) {
 
 Color ray_color(const Ray& light, const Hittable& world) {
     HitRecord record;
-    if (world.hit(light, 0, std::numeric_limits<value_type>::infinity(), record)) {
+    if (world.hit(light, 0, ohtoai::math::constants::infinity, record)) {
         return 0.5 * (Color(record.normal) + Color(1, 1, 1)) * 255;
     }
 
+    // background
     auto unit_direction = light.direction().normalized();
     const auto a = 0.5 * (unit_direction.y() + 1.0);
     auto Result = Color::rgb(0xffffff).mix(Color::rgb(0x7fb2ff), a);
@@ -67,8 +75,6 @@ int main() {
     const auto viewport_upper_left = camera_center - Vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
     const auto pixel100_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    initgraph(image_width, image_height);
-    BeginBatchDraw();
 
     HittableList world;
     auto ground_sphere = std::make_shared<Sphere>(Point3(0, 0, -1), 0.5);
@@ -77,8 +83,8 @@ int main() {
     world.add(ground_sphere);
     world.add(fake_ground);
 
-    auto pixel_buff = GetImageBuffer(nullptr);
 
+#if USE_EASYX
     auto render = [&]{
         // 渲染部分
         for (int y = 0; y < image_height; ++y) {
@@ -88,12 +94,13 @@ int main() {
                 const auto Ray_direction = pixel_center - camera_center;
                 Ray light(camera_center, Ray_direction);
                 auto write_Color = ray_color(light, world);
-                pixel_buff[y * image_width + x] = write_Color.to_rgb();
+                putpixel(x, y, write_Color.to_easyx());
             }
         }
     };
 
-    // calc FPS
+    initgraph(image_width, image_height);
+    BeginBatchDraw();
     auto last_frame_time = std::chrono::steady_clock::now();
     while (true) {
         render();
@@ -111,6 +118,43 @@ int main() {
 
     EndBatchDraw();
     closegraph();
+#else
+    // render ppm
+    std::ofstream ppm_file("render.ppm");
+    ppm_file << fmt::format("P3\n{} {}\n255\n", image_width, image_height);
+    for (int y = 0; y < image_height; ++y) {
+        const auto height_vec = static_cast<float>(y) * pixel_delta_v;
+        for (int x = 0; x < image_width; ++x) {
+            auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
+            const auto Ray_direction = pixel_center - camera_center;
+            Ray light(camera_center, Ray_direction);
+            auto write_Color = ray_color(light, world);
+            ppm_file << fmt::format("{} {} {}\n", write_Color.red<int>(), write_Color.green<int>(), write_Color.blue<int>());
+        }
+    }
+    ppm_file.close();
+
+    // render png
+    FILE* png_file = fopen("render.png", "wb");
+    unsigned char* png_data = nullptr;
+    png_data = new unsigned char[image_width * image_height * 3];
+    for (int y = 0; y < image_height; ++y) {
+        const auto height_vec = static_cast<float>(y) * pixel_delta_v;
+        for (int x = 0; x < image_width; ++x) {
+            auto pixel_center = pixel100_loc + (static_cast<float>(x) * pixel_delta_u) + height_vec;
+            const auto Ray_direction = pixel_center - camera_center;
+            Ray light(camera_center, Ray_direction);
+            auto write_Color = ray_color(light, world);
+            auto index = (y * image_width + x) * 3;
+            png_data[index] = write_Color.red<int>();
+            png_data[index + 1] = write_Color.green<int>();
+            png_data[index + 2] = write_Color.blue<int>();
+        }
+    }
+    svpng(png_file, image_width, image_height, png_data, false);
+    fclose(png_file);
+    delete[] png_data;
+#endif
     return 0;
 }
 
