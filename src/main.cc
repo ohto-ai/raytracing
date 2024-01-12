@@ -6,11 +6,12 @@
 #include <spdlog/fmt/fmt.h>
 #include <chrono>
 #include <thread>
-#define EXPORT_PPM
+// #define EXPORT_PPM
 #define EXPORT_PNG
+// #define EXPORT_EASYX
 
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(EXPORT_EASYX)
 #include <easyx.h>
 #endif
 
@@ -33,7 +34,8 @@ int main() {
     camera.aspect_ratio = 16.0 / 9.0;
     camera.image_width = 640;
     camera.image_height = 360;
-#if defined(EX_SHOWCONSOLE)
+    camera.samples_per_pixel = 100;
+#if defined(EX_SHOWCONSOLE) && defined(EXPORT_EASYX)
     initgraph(camera.image_width, camera.image_height);
     BeginBatchDraw();
 
@@ -62,17 +64,18 @@ int main() {
 #if defined(EXPORT_PNG)
     // render png
     FILE* png_file = fopen("render.png", "wb");
-    unsigned char* png_data = nullptr;
-    png_data = new unsigned char[camera.image_width * camera.image_height * 3];
-    camera.render(world, [&](int x, int y, const auto& color) {
-        auto index = (y * camera.image_width + x) * 3;
-        png_data[index] = color.red<int>();
-        png_data[index + 1] = color.green<int>();
-        png_data[index + 2] = color.blue<int>();
-    });
-    svpng(png_file, camera.image_width, camera.image_height, png_data, false);
-    fclose(png_file);
-    delete[] png_data;
+    auto png_data = new unsigned char[camera.image_width * camera.image_height * 3];
+    if (png_data != nullptr) {
+        camera.render(world, [&](int x, int y, const auto& color) {
+            auto index = (y * camera.image_width + x) * 3;
+            png_data[index] = color.red<int>();
+            png_data[index + 1] = color.green<int>();
+            png_data[index + 2] = color.blue<int>();
+        });
+        svpng(png_file, camera.image_width, camera.image_height, png_data, false);
+        fclose(png_file);
+        delete[] png_data;
+    }
 #endif
     return 0;
 }

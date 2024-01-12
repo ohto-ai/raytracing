@@ -44,9 +44,11 @@ namespace ohtoai{
         }
 
         static inline std::mt19937 random_gen = std::mt19937(std::random_device()());
-        inline double random_double(std::mt19937& gen, double min, double max) {
-            std::uniform_real_distribution<double> dis(min, max);
-            return dis(gen);
+
+        template <typename T>
+        inline T random_real(T min, T max) {
+            std::uniform_real_distribution<T> dis(min, max);
+            return dis(random_gen);
         }
     }
 }

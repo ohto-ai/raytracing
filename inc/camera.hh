@@ -29,11 +29,13 @@ namespace ohtoai{
                 for (int y = 0; y < image_height; ++y) {
                     const auto height_vec = y * pixel_delta_v;
                     for (int x = 0; x < image_width; ++x) {
-                        auto pixel_center = pixel100_loc + (x * pixel_delta_u) + height_vec;
-                        const auto Ray_direction = pixel_center - camera_center;
-                        Ray light(camera_center, Ray_direction);
-                        auto write_Color = ray_color(light, world);
-                        func(x, y, write_Color);
+                        color_type pixel_color {};
+                        for (int s = 0; s < samples_per_pixel; ++s) {
+                            auto ray = get_ray(x, y, height_vec);
+                            pixel_color += ray_color(ray, world);
+                        }
+                        pixel_color /= samples_per_pixel;
+                        func(x, y, pixel_color);
                     }
                 }
             }
@@ -54,6 +56,7 @@ namespace ohtoai{
             int image_width = 640;
             int image_height = 360;
             value_type aspect_ratio = 16.0 / 9.0;
+            int samples_per_pixel = 10;
 
         protected:
             void initialize() {
@@ -77,8 +80,11 @@ namespace ohtoai{
                 const auto viewport_upper_left = camera_center - vector_type(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
                 pixel100_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
             }
-            ray_type get_ray(value_type u, value_type v) const {
-                return ray_type(origin_, lower_left_corner_ + u * horizontal_ + v * vertical_ - origin_);
+            ray_type get_ray(int x, int y, const vector_type& height_vec) const {
+                auto pixel_center = pixel100_loc + (x * pixel_delta_u) + height_vec;
+                auto pixel_sample = pixel_center + random_real(-0.5, 0.5) * pixel_delta_u + random_real(-0.5, 0.5) * pixel_delta_v;
+                const auto ray_direction = pixel_sample - camera_center;
+                return ray_type(camera_center, ray_direction);
             }
 
         protected:
