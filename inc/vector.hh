@@ -112,13 +112,50 @@ namespace ohtoai {
             const value_type& y() const { return (*this)[1]; }
             const value_type& z() const { return (*this)[2]; }
             const value_type& w() const { return (*this)[3]; }
-
         };
 
         template <typename Arg, typename... Args>
         constexpr auto make_vector(Arg arg, Args... args) {
             return Vector<Arg, sizeof...(args) + 1>(arg, args...);
         }
+
+        template <typename T, size_t D>
+        constexpr auto make_random_vector() {
+            Vector<T, D> v;
+            std::generate(v.begin(), v.end(), []() { return random_real<T>(0, 1); });
+            return v;
+        }
+        template <typename T, size_t D>
+        constexpr auto make_random_vector(T min, T max) {
+            Vector<T, D> v;
+            std::generate(v.begin(), v.end(), [min, max]() { return random_real<T>(min, max); });
+            return v;
+        }
+
+        template <typename T>
+        constexpr auto generate_random_vector_in_sphere() {
+            while (true) {
+                auto v = make_random_vector<T, 3>();
+                if (v.length2() <= 1)
+                    return v;
+            }
+        }
+
+        template <typename T>
+        constexpr auto generate_random_vector_on_sphere() {
+            return generate_random_vector_in_sphere<T>().normalized();
+        }
+
+        template <typename T>
+        constexpr auto generate_random_vector_on_hemisphere(Vector<T, 3> normal) {
+            auto v = generate_random_vector_in_sphere<T>().normalized();
+            if (v.dot(normal) > 0)
+                return v;
+            else
+                return -v;
+        }
+
+
 
         template<typename T, size_t D, typename U>
         Vector<typename std::common_type_t<T, U>, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2) {

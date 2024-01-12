@@ -32,7 +32,7 @@ namespace ohtoai{
                         color_type pixel_color {};
                         for (int s = 0; s < samples_per_pixel; ++s) {
                             auto ray = get_ray(x, y, height_vec);
-                            pixel_color += ray_color(ray, world);
+                            pixel_color += ray_color(ray, world) * 255;
                         }
                         pixel_color /= samples_per_pixel;
                         func(x, y, pixel_color);
@@ -43,13 +43,14 @@ namespace ohtoai{
             color_type ray_color(const ray_type& light, const hittable_type& world) {
                 hit_record_type record;
                 if (world.hit(light, make_interval(0.0, ohtoai::math::constants::infinity), record)) {
-                    return color_type::rgb(0xffffff).mix(color_type(record.normal * 255));
+                    vector_type direction = generate_random_vector_on_hemisphere(record.normal);
+                    return 0.5 * ray_color(ray_type(record.point, direction), world);
                 }
 
                 // background
                 auto unit_direction = light.direction().normalized();
                 const auto a = 0.5 * (unit_direction.y() + 1.0);
-                auto result = color_type::rgb(0xffffff).mix(color_type::rgb(0x7fb2ff), a);
+                auto result = color_type::rgb(1, 1, 1).mix(color_type::rgb(0.5, 0.7, 1.0), a);
                 return result;
             }
         public:

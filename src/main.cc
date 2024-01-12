@@ -3,10 +3,11 @@
 #include "color.hh"
 #include "hittable_list.hh"
 #include "sphere.hh"
-#include <spdlog/fmt/fmt.h>
+#include <fmt/format.h>
+#include <format>
 #include <chrono>
 #include <thread>
-// #define EXPORT_PPM
+#define EXPORT_PPM
 #define EXPORT_PNG
 // #define EXPORT_EASYX
 

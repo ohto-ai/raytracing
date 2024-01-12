@@ -3,6 +3,7 @@
 
 |       Title        |                Image                |
 | ------------------ | ----------------------------------- |
+| Diffuse reflection | ![](doc/img/diffuse_reflection.png) |
 | Samples per pixel  | ![](doc/img/samples_per_pixel.png)  |
 | Sphere with ground | ![](doc/img/sphere_with_ground.png) |
 | Normal             | ![](doc/img/normal.png)             |

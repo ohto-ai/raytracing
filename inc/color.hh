@@ -136,7 +136,7 @@ namespace ohtoai {
 
             template<typename U>
             constexpr static Color rgb(U r, U g, U b) {
-                return rgba(r, g, b, 0xff);
+                return rgba(r, g, b, {});
             }
 
             constexpr static Color rgb(uint32_t rgb) {
