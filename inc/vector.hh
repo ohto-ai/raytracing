@@ -13,12 +13,10 @@
 
 namespace ohtoai {
     namespace math {
-        template <typename T, size_t D>
-        class Vector: public std::array<T, D> {
+        template <size_t Dimension>
+        class Vector: public std::array<real, Dimension> {
         public:
-            using array_type = std::array<T, D>;
-            using typename array_type::value_type;
-            constexpr static size_t Dimension = D;
+            using array_type = std::array<real, Dimension>;
 
             constexpr Vector() = default;
             constexpr Vector(const Vector&) = default;
@@ -28,49 +26,52 @@ namespace ohtoai {
             ~Vector() = default;
 
             template<typename... Args>
-            constexpr explicit Vector(Args ...args) : array_type {{static_cast<T>(args)...}} {
-                static_assert(sizeof...(args) == D, "Number of arguments must match the vector size");
+            constexpr explicit Vector(Args ...args) : array_type {{static_cast<real>(args)...}} {
+                static_assert(sizeof...(args) == Dimension, "Number of arguments must match the vector size");
             }
 
-            template<typename U>
-            Vector& operator+=(const Vector<U, Dimension>& v) {
-                std::transform(array_type::begin(), array_type::end(), v.begin(), array_type::begin(), std::plus());
+            Vector& operator+=(const Vector& v) {
+                for (size_t i = 0; i < Dimension; ++i)
+                    (*this)[i] += v[i];
                 return *this;
             }
 
-            template<typename U>
-            Vector& operator-=(const Vector<U, Dimension>& v) {
-                std::transform(array_type::begin(), array_type::end(), v.begin(), array_type::begin(), std::minus());
+            Vector& operator-=(const Vector& v) {
+                for (size_t i = 0; i < Dimension; ++i)
+                    (*this)[i] -= v[i];
                 return *this;
             }
 
-            template<typename U>
-            Vector& operator*=(const Vector<U, Dimension>& v) {
-                std::transform(array_type::begin(), array_type::end(), v.begin(), array_type::begin(), std::multiplies());
+            Vector& operator*=(const Vector& v) {
+                for (size_t i = 0; i < Dimension; ++i)
+                    (*this)[i] *= v[i];
                 return *this;
             }
 
-            Vector& operator*=(const value_type& t) {
+            Vector& operator*=(real t) {
                 for (size_t i = 0; i < Dimension; ++i)
                     (*this)[i] *= t;
                 return *this;
             }
 
-            Vector& operator/=(const value_type& t) {
+            Vector& operator/=(real t) {
                 for (size_t i = 0; i < Dimension; ++i)
                     (*this)[i] /= t;
                 return *this;
             }
 
-            const Vector& operator-() const {
-                static_assert(std::is_signed_v<value_type>, "Vector must be signed type");
+            Vector operator-() const {
                 Vector neg;
-                std::transform(array_type::begin(), array_type::end(), neg.begin(), std::negate());
-                return *this;
+                for (size_t i = 0; i < Dimension; ++i)
+                    neg[i] = -(*this)[i];
+                return neg;
             }
 
             auto length2() const {
-                return std::reduce(array_type::begin(), array_type::end(), value_type{}, [](const value_type& a, const value_type& b) { return a + b * b; });
+                real sum = 0;
+                for (size_t i = 0; i < Dimension; ++i)
+                    sum += (*this)[i] * (*this)[i];
+                return sum;
             }
 
             auto length() const {
@@ -78,24 +79,34 @@ namespace ohtoai {
             }
 
             Vector& normalize() {
-                static_assert(std::is_floating_point_v<value_type>, "Vector must be floating point type");
                 return *this /= length();
             }
 
             Vector normalized() const {
-                static_assert(std::is_floating_point_v<value_type>, "Vector must be floating point type");
                 return *this / length();
             }
 
-            template<typename U>
-            typename std::common_type_t<T, U> dot(const Vector<U, Dimension>& v) const {
-                return std::transform_reduce(array_type::begin(), array_type::end(), v.begin(), std::common_type_t<T, U>{});
+            constexpr bool operator==(const Vector& v) const {
+                for (size_t i = 0; i < Dimension; ++i)
+                    if ((*this)[i] != v[i])
+                        return false;
+                return true;
             }
 
-            template<typename U>
-            auto cross(const Vector<U, Dimension>& v) const {
+            constexpr bool operator!=(const Vector& v) const {
+                return !(*this == v);
+            }
+
+            constexpr real dot(const Vector& v) const {
+                real sum = 0;
+                for (size_t i = 0; i < Dimension; ++i)
+                    sum += (*this)[i] * v[i];
+                return sum;
+            }
+
+            constexpr auto cross(const Vector& v) const {
                 static_assert(Dimension == 3, "Cross product is only defined for 3D vectors");
-                return Vector(
+                return make_vector(
                     (*this)[1] * v[2] - (*this)[2] * v[1],
                     (*this)[2] * v[0] - (*this)[0] * v[2],
                     (*this)[0] * v[1] - (*this)[1] * v[0]);
@@ -103,134 +114,103 @@ namespace ohtoai {
 
             constexpr size_t size() const { return Dimension; }
 
-            value_type& x() { return (*this)[0]; }
-            value_type& y() { return (*this)[1]; }
-            value_type& z() { return (*this)[2]; }
-            value_type& w() { return (*this)[3]; }
+            real& x() { return (*this)[0]; }
+            real& y() { return (*this)[1]; }
+            real& z() { return (*this)[2]; }
+            real& w() { return (*this)[3]; }
 
-            const value_type& x() const { return (*this)[0]; }
-            const value_type& y() const { return (*this)[1]; }
-            const value_type& z() const { return (*this)[2]; }
-            const value_type& w() const { return (*this)[3]; }
+            const real& x() const { return (*this)[0]; }
+            const real& y() const { return (*this)[1]; }
+            const real& z() const { return (*this)[2]; }
+            const real& w() const { return (*this)[3]; }
         };
 
-        template <typename Arg, typename... Args>
-        constexpr auto make_vector(Arg arg, Args... args) {
-            return Vector<Arg, sizeof...(args) + 1>(arg, args...);
+        template <typename... Args>
+        constexpr auto make_vector(Args... args) {
+            return Vector<sizeof...(args)>(std::forward<Args>(args)...);
         }
 
-        template <typename T, size_t D>
-        constexpr auto make_random_vector() {
-            Vector<T, D> v;
-            std::generate(v.begin(), v.end(), []() { return random_real<T>(0, 1); });
-            return v;
-        }
-        template <typename T, size_t D>
-        constexpr auto make_random_vector(T min, T max) {
-            Vector<T, D> v;
-            std::generate(v.begin(), v.end(), [min, max]() { return random_real<T>(min, max); });
+        template <size_t Dimension>
+        const auto make_random_vector() {
+            Vector<Dimension> v;
+            for (size_t i = 0; i < Dimension; ++i)
+                v[i] = random_real();
             return v;
         }
 
-        template <typename T>
-        constexpr auto generate_random_vector_in_sphere() {
+        template <size_t Dimension>
+        const auto make_random_vector(real min, real max) {
+            Vector<T, Dimension> v;
+            for (size_t i = 0; i < Dimension; ++i)
+                v[i] = random_real(min, max);
+            return v;
+        }
+
+        const auto generate_random_vector_in_sphere() {
             while (true) {
-                auto v = make_random_vector<T, 3>();
-                if (v.length2() <= 1)
+                auto v = make_random_vector<3>();
+                if (v.length2() <= 1.0)
                     return v;
             }
         }
 
-        template <typename T>
-        constexpr auto generate_random_vector_on_sphere() {
-            return generate_random_vector_in_sphere<T>().normalized();
+        const auto generate_random_vector_on_sphere() {
+            return generate_random_vector_in_sphere().normalized();
         }
 
-        template <typename T>
-        constexpr auto generate_random_vector_on_hemisphere(Vector<T, 3> normal) {
-            auto v = generate_random_vector_in_sphere<T>().normalized();
+        const auto generate_random_vector_on_hemisphere(const Vector<3>& normal) {
+            auto v = generate_random_vector_on_sphere();
             if (v.dot(normal) > 0)
                 return v;
             else
                 return -v;
         }
 
-
-
-        template<typename T, size_t D, typename U>
-        Vector<typename std::common_type_t<T, U>, D> operator+(const Vector<T, D>& v1, const Vector<U, D>& v2) {
-            Vector<typename std::common_type_t<T, U>, D> sum;
-            std::transform(v1.begin(), v1.end(), v2.begin(), sum.begin(), std::plus());
-            return sum;
+        template<size_t Dimension>
+        constexpr Vector<Dimension> operator+(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
+            Vector<Dimension> sum(v1);
+            return sum += v2;
         }
 
-        template<typename T, size_t D, typename U>
-        Vector<typename std::common_type_t<T, U>, D> operator-(const Vector<T, D>& v1, const Vector<U, D>& v2) {
-            Vector<typename std::common_type_t<T, U>, D> diff;
-            std::transform(v1.begin(), v1.end(), v2.begin(), diff.begin(), std::minus());
-            return diff;
+        template<size_t Dimension>
+        constexpr Vector<Dimension> operator-(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
+            Vector<Dimension> diff(v1);
+            return diff -= v2;
         }
 
-        template<typename T, size_t D>
-        Vector<T, D> operator*(const Vector<T, D>& v, const typename Vector<T, D>::value_type& t) {
-            Vector<T, D> prod(v);
+        template<size_t Dimension>
+        constexpr Vector<Dimension> operator*(const Vector<Dimension>& v, real t) {
+            Vector<Dimension> prod(v);
             return prod *= t;
         }
 
-        template<typename T, size_t D>
-        Vector<T, D> operator*(const typename Vector<T, D>::value_type& t, const Vector<T, D>& v) {
+        template<size_t Dimension>
+        constexpr Vector<Dimension> operator*(real t, const Vector<Dimension>& v) {
             return v * t;
         }
 
-        template<typename T, size_t D>
-        Vector<T, D> operator/(const Vector<T, D>& v, const typename Vector<T, D>::value_type& t) {
-            Vector<T, D> quot(v);
+        template<size_t Dimension>
+        constexpr Vector<Dimension> operator/(const Vector<Dimension>& v, real t) {
+            Vector<Dimension> quot(v);
             return quot /= t;
         }
 
-        template<typename T, size_t D, typename U>
-        Vector<typename std::common_type_t<T, U>, D> operator*(const Vector<T, D>& v1, const Vector<U, D>& v2) {
-            Vector<typename std::common_type_t<T, U>, D> prod;
-            std::transform(v1.begin(), v1.end(), v2.begin(), prod.begin(), std::multiplies());
-            return prod;
+        template<size_t Dimension>
+        constexpr Vector<Dimension> operator*(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
+            Vector<Dimension> prod(v1);
+            return prod *= v2;
         }
 
-        template<typename T, size_t D, typename U>
-        bool operator==(const Vector<T, D>& v1, const Vector<U, D>& v2) {
-            for (size_t i = 0; i < D; ++i)
-                if (v1[i] != v2[i])
-                    return false;
-            return true;
+        using Vec2 = Vector<2>;
+        using Vec3 = Vector<3>;
+        using Vec4 = Vector<4>;
+
+        template <typename... Args>
+        constexpr auto make_point(Args... args) {
+            return make_vector(std::forward<Args>(args)...);
         }
-
-        template<typename T, size_t D, typename U>
-        bool operator!=(const Vector<T, D>& v1, const Vector<U, D>& v2) {
-            return !(v1 == v2);
-        }
-
-        template <typename T>
-        using Vec2 = Vector<T, 2>;
-        template <typename T>
-        using Vec3 = Vector<T, 3>;
-
-        using Vec2f = Vec2<float>;
-        using Vec3f = Vec3<float>;
-        using Vec2d = Vec2<double>;
-        using Vec3d = Vec3<double>;
-        using Vec2i = Vec2<int>;
-        using Vec3i = Vec3<int>;
-
-        template <typename T>
-        using Point2 = Vector<T, 2>;
-        template <typename T>
-        using Point3 = Vector<T, 3>;
-
-        using Point2f = Point2<float>;
-        using Point3f = Point3<float>;
-        using Point2d = Point2<double>;
-        using Point3d = Point3<double>;
-        using Point2i = Point2<int>;
-        using Point3i = Point3<int>;
+        using Point2 = Vector<2>;
+        using Point3 = Vector<3>;
     }
 }
 

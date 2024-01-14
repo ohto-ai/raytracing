@@ -8,25 +8,16 @@
 
 namespace ohtoai{
     namespace math {
-        template<typename T>
-        class HittableList : public Hittable<T> {
+        class HittableList : public Hittable {
         public:
-            using value_type = T;
-            using point_type = Point3<T>;
-            using vector_type = Vec3<T>;
-            using ray_type = Ray<T>;
-            using hit_record_type = HitRecord<T>;
-            using hittable_type = Hittable<T>;
-            using interval_type = Interval<T>;
-
             HittableList() = default;
-            explicit HittableList(const std::shared_ptr<hittable_type>& object) { add(object); }
+            explicit HittableList(const std::shared_ptr<Hittable>& object) { add(object); }
 
             void clear() { objects_.clear(); }
-            void add(const std::shared_ptr<hittable_type>& object) { objects_.push_back(object); }
+            void add(const std::shared_ptr<Hittable>& object) { objects_.push_back(object); }
 
-            virtual bool hit(const ray_type& light, const interval_type& ray_range, hit_record_type& rec) const override {
-                hit_record_type temp_rec;
+            virtual bool hit(const Ray& light, const Interval& ray_range, HitRecord& rec) const override {
+                HitRecord temp_rec;
                 bool hit_anything = false;
                 auto closest_so_far = ray_range.max();
 
@@ -42,7 +33,7 @@ namespace ohtoai{
             }
 
         private:
-            std::vector<std::shared_ptr<hittable_type>> objects_;
+            std::vector<std::shared_ptr<Hittable>> objects_;
         };
     }
 }

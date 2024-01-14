@@ -12,13 +12,8 @@
 namespace ohtoai {
     namespace math {
         // RGBA
-        template<typename T>
-        class Color : protected math::Vector<T, 4> {
+        class Color : protected Vec4 {
         public:
-            using vector_type = math::Vector<T, 4>;
-            using typename vector_type::value_type;
-            using vector_type::Dimension;
-
             constexpr Color() = default;
             constexpr Color(const Color&) = default;
             constexpr Color(Color&&) = default;
@@ -27,50 +22,45 @@ namespace ohtoai {
             ~Color() = default;
 
             constexpr Color(uint32_t rgba) : Color((rgba >> 24) & 0xff, (rgba >> 16) & 0xff, (rgba >> 8) & 0xff, rgba & 0xff) {}
-            template<typename U>
-            constexpr Color(U r, U g, U b, U a = {})
-                : vector_type(static_cast<value_type>(r), static_cast<value_type>(g)
-                , static_cast<value_type>(b), static_cast<value_type>(a)) {}
+            constexpr Color(real r, real g, real b, real a = {})
+                : Vec4(r, g ,b ,a) {}
 
-            template<typename U>
-            constexpr Color(const math::Vector<U, 3>& v)
-                : Color(static_cast<value_type>(v[0])
-                    , static_cast<value_type>(v[1])
-                    , static_cast<value_type>(v[2])) {}
-            template<typename U>
-            constexpr Color(const math::Vector<U, 4>& v)
-                : Color(static_cast<value_type>(v[0])
-                    , static_cast<value_type>(v[1])
-                    , static_cast<value_type>(v[2])
-                    , static_cast<value_type>(v[3])) {}
+            constexpr Color(const Vec3& v)
+                : Color(v[0], v[1], v[2]) {}
+            constexpr Color(const Vec4& v)
+                : Color(v[0], v[1], v[2], v[3]) {}
 
             Color& operator+=(const Color& v) {
-                vector_type::operator+=(v);
+                Vec4::operator+=(v);
                 return *this;
             }
 
             Color& operator-=(const Color& v) {
-                vector_type::operator-=(v);
+                Vec4::operator-=(v);
                 return *this;
             }
 
             Color& operator*=(const Color& v) {
-                vector_type::operator*=(v);
+                Vec4::operator*=(v);
                 return *this;
             }
 
-            Color& operator*=(const value_type& t) {
-                vector_type::operator*=(t);
+            Color& operator*=(real t) {
+                Vec4::operator*=(t);
                 return *this;
             }
 
-            Color& operator/=(const value_type& t) {
-                vector_type::operator/=(t);
+            Color& operator/=(real t) {
+                Vec4::operator/=(t);
                 return *this;
             }
 
-            constexpr vector_type& to_vector() const { return *this; }
-            vector_type& to_vector() { return *this; }
+            using Vec4::operator[];
+            using Vec4::operator==;
+            using Vec4::operator!=;
+
+            constexpr Vec4& to_vector() const { return make_vector((*this)[0], (*this)[1], (*this)[2], (*this)[3]); }
+            Vec4& to_vector() { return *this; }
 
             template <int r_index, int g_index, int b_index, int a_index
                     , uint8_t r_mask = 0xff, uint8_t g_mask = 0xff, uint8_t b_mask = 0xff, uint8_t a_mask = 0xff>
@@ -82,8 +72,11 @@ namespace ohtoai {
                 return static_cast<uint32_t>(((r & r_mask) << r_index ) | ((g & g_mask) << g_index) | ((b & b_mask) << b_index) | ((a & a_mask) << a_index));
             }
 
-            constexpr Color clamp(value_type max = value_type{255}) const {
-                return Color(std::clamp(red(), value_type{}, value_type{255}), std::clamp(green(), value_type{}, value_type{255}), std::clamp(blue(), value_type{}, value_type{255}), std::clamp(alpha(), value_type{}, value_type{255}));
+            constexpr Color clamp(real max = 255.0) const {
+                return Color(std::clamp(red(), 0.0, max),
+                             std::clamp(green(), 0.0, max),
+                             std::clamp(blue(), 0.0, max),
+                             std::clamp(alpha(), 0.0, max));
             }
 
             constexpr uint32_t to_rgba() const {
@@ -110,20 +103,20 @@ namespace ohtoai {
                 return to_bgr();
             }
 
-            constexpr value_type red()      const { return (*this)[0]; }
-            constexpr value_type green()    const { return (*this)[1]; }
-            constexpr value_type blue()     const { return (*this)[2]; }
-            constexpr value_type alpha()    const { return (*this)[3]; }
+            constexpr real red()      const { return (*this)[0]; }
+            constexpr real green()    const { return (*this)[1]; }
+            constexpr real blue()     const { return (*this)[2]; }
+            constexpr real alpha()    const { return (*this)[3]; }
 
             template <typename U> constexpr U red()     const { return static_cast<U>(red()); }
             template <typename U> constexpr U green()   const { return static_cast<U>(green()); }
             template <typename U> constexpr U blue()    const { return static_cast<U>(blue()); }
             template <typename U> constexpr U alpha()   const { return static_cast<U>(alpha()); }
 
-            value_type& red()   { return (*this)[0]; }
-            value_type& green() { return (*this)[1]; }
-            value_type& blue()  { return (*this)[2]; }
-            value_type& alpha() { return (*this)[3]; }
+            real& red()   { return (*this)[0]; }
+            real& green() { return (*this)[1]; }
+            real& blue()  { return (*this)[2]; }
+            real& alpha() { return (*this)[3]; }
 
             template<typename U = uint8_t>
             constexpr static Color rgba(U r, U g, U b, U a) {
@@ -143,55 +136,42 @@ namespace ohtoai {
                 return rgba<uint8_t>((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, 0xff);
             }
 
-            template<typename C1, typename C2, typename = std::enable_if_t<std::conjunction_v<std::is_convertible<C1, Color>, std::is_convertible<C2, Color>>>>
-            constexpr static Color mix(const C1& c1, const C2& c2, double t = 0.5) {
+            constexpr static Color mix(const Color& c1, const Color& c2, double t = 0.5) {
                 return Color(c1) * (1 - t) + Color(c2) * t;
             }
 
-            template<typename C2>
-            constexpr auto mix(const C2& c2, double t = 0.5) const {
+            constexpr auto mix(const Color& c2, double t = 0.5) const {
                 return mix(*this, c2, t);
             }
         };
 
-        template<typename T>
-        constexpr Color<T> operator+(const Color<T>& v1, const Color<T>& v2) {
-            return Color<T>::rgba(v1.red() + v2.red(), v1.green() + v2.green(), v1.blue() + v2.blue(), v1.alpha() + v2.alpha());
+        constexpr Color operator+(const Color& v1, const Color& v2) {
+            return Color::rgba(v1.red() + v2.red(), v1.green() + v2.green(), v1.blue() + v2.blue(), v1.alpha() + v2.alpha());
         }
 
-        template<typename T>
-        constexpr Color<T> operator-(const Color<T>& v1, const Color<T>& v2) {
-            return Color<T>::rgba(v1.red() - v2.red(), v1.green() - v2.green(), v1.blue() - v2.blue(), v1.alpha() - v2.alpha());
+        constexpr Color operator-(const Color& v1, const Color& v2) {
+            return Color::rgba(v1.red() - v2.red(), v1.green() - v2.green(), v1.blue() - v2.blue(), v1.alpha() - v2.alpha());
         }
 
-        template<typename T>
-        constexpr Color<T> operator*(const Color<T>& v, const typename Color<T>::value_type& t) {
-            return Color<T>::rgba(v.red() * t, v.green() * t, v.blue() * t, v.alpha() * t);
+        constexpr Color operator*(const Color& v, real t) {
+            return Color::rgba(v.red() * t, v.green() * t, v.blue() * t, v.alpha() * t);
         }
 
-        template<typename T>
-        constexpr Color<T> operator*(const typename Color<T>::value_type& t, const Color<T>& v) {
+        constexpr Color operator*(real t, const Color& v) {
             return v * t;
         }
 
-        template<typename T>
-        constexpr Color<T> operator/(const Color<T>& v, const typename Color<T>::value_type& t) {
-            return Color<T>::rgba(v.red() / t, v.green() / t, v.blue() / t, v.alpha() / t);
+        constexpr Color operator/(const Color& v, real t) {
+            return Color::rgba(v.red() / t, v.green() / t, v.blue() / t, v.alpha() / t);
         }
 
-        template<typename T, typename U>
-        constexpr bool operator==(const Color<T>& v1, const Color<U>& v2) {
-            return Color<T>::vector_type::operator==(v1, v2);
+        constexpr Color make_color(uint32_t rgba) {
+            return Color::rgba(rgba);
         }
 
-        template<typename T, typename U>
-        constexpr bool operator!=(const Color<T>& v1, const Color<U>& v2) {
-            return !(v1 == v2);
+        constexpr Color make_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xff) {
+            return Color::rgba(r, g, b, a);
         }
-
-        using Colorf = Color<float>;
-        using Colord = Color<double>;
-        using Colori = Color<int>;
     }
 }
 

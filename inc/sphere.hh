@@ -8,21 +8,13 @@
 
 namespace ohtoai{
     namespace math {
-        template<typename T>
-        class Sphere : public Hittable<T> {
+        class Sphere : public Hittable {
         public:
-            using value_type = T;
-            using point_type = Point3<T>;
-            using vector_type = Vec3<T>;
-            using ray_type = Ray<T>;
-            using hit_record_type = HitRecord<T>;
-            using interval_type = Interval<T>;
-
             Sphere() = default;
-            Sphere(const point_type& center, value_type radius) : center_(center), radius_(radius) {}
+            Sphere(const Point3& center, real radius) : center_(center), radius_(radius) {}
 
-            virtual bool hit(const ray_type& light, const interval_type& ray_range, hit_record_type& rec) const override {
-                vector_type origin = light.origin() - center_;
+            virtual bool hit(const Ray& light, const Interval& ray_range, HitRecord& rec) const override {
+                Vec3 origin = light.origin() - center_;
                 const auto a = light.direction().dot(light.direction());
                 const auto b = 2.0 * origin.dot(light.direction());
                 const auto c = origin.dot(origin) - radius_ * radius_;
@@ -45,8 +37,8 @@ namespace ohtoai{
             }
 
         private:
-            point_type center_;
-            value_type radius_;
+            Point3 center_;
+            real radius_;
         };
     }
 }

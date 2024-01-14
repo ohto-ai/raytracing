@@ -24,10 +24,10 @@
 #endif
 
 int main() {
-    ohtoai::math::Camera<double> camera;
-    ohtoai::math::HittableList<double> world;
-    auto ground_sphere = std::make_shared<ohtoai::math::Sphere<double>>(ohtoai::math::Point3d(0, 0, -1), 0.5);
-    auto fake_ground = std::make_shared<ohtoai::math::Sphere<double>>(ohtoai::math::Point3d(0, -100.5, -1), 100);
+    ohtoai::math::Camera camera;
+    ohtoai::math::HittableList world;
+    auto ground_sphere = std::make_shared<ohtoai::math::Sphere>(ohtoai::math::make_point(0, 0, -1), 0.5);
+    auto fake_ground = std::make_shared<ohtoai::math::Sphere>(ohtoai::math::make_point(0, -100.5, -1), 100);
 
     world.add(ground_sphere);
     world.add(fake_ground);
@@ -43,7 +43,7 @@ int main() {
 
     {
         auto start = std::chrono::high_resolution_clock::now();
-        camera.render_mt(world, [&](int x, int y, const auto& color) {
+        camera.render(world, [&](int x, int y, const auto& color) {
             putpixel(x, y, color.to_easyx_color());
             FlushBatchDraw();
         });

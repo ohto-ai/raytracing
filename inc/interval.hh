@@ -8,11 +8,8 @@
 
 namespace ohtoai{
     namespace math {
-        template<typename T>
         class Interval {
         public:
-            using value_type = T;
-
             constexpr Interval() = default;
             constexpr Interval(const Interval&) = default;
             constexpr Interval(Interval&&) = default;
@@ -20,16 +17,16 @@ namespace ohtoai{
             constexpr Interval& operator=(Interval&&) = default;
             ~Interval() = default;
 
-            constexpr Interval(value_type min, value_type max) : min_(min), max_(max) {}
+            constexpr Interval(real min, real max) : min_(min), max_(max) {}
 
-            constexpr value_type min() const { return min_; }
-            constexpr value_type max() const { return max_; }
+            constexpr real min() const { return min_; }
+            constexpr real max() const { return max_; }
 
-            constexpr bool contains(value_type value) const {
+            constexpr bool contains(real value) const {
                 return !(value < min_ || max_ < value);
             }
 
-            constexpr bool surrounds(value_type value) const {
+            constexpr bool surrounds(real value) const {
                 return min_ < value && value < max_;
             }
 
@@ -37,34 +34,26 @@ namespace ohtoai{
                 return min_ > max_;
             }
 
-            constexpr value_type clamp(value_type value) const {
+            constexpr real clamp(real value) const {
                 return std::clamp(value, min_, max_);
             }
 
             protected:
-                value_type min_;
-                value_type max_;
+                real min_;
+                real max_;
         };
 
-        template<typename T>
-        constexpr Interval<T> make_interval(T min, T max) {
-            return Interval<T>(min, max);
+        constexpr Interval make_interval(real min, real max) {
+            return Interval(min, max);
         }
 
-        template<typename T>
-        constexpr Interval<T> make_interval(T value) {
-            return Interval<T>(value, value);
+        constexpr Interval make_interval(real value) {
+            return Interval(value, value);
         }
 
-        template<typename T>
-        constexpr Interval<T> EmptyInterval {
-            std::numeric_limits<T>::infinity, -std::numeric_limits<T>::infinity
-        };
+        constexpr Interval EmptyInterval = make_interval(constants::infinity, -constants::infinity);
 
-        template<typename T>
-        constexpr Interval<T> UniverseInterval {
-            -std::numeric_limits<T>::infinity, std::numeric_limits<T>::infinity
-        };
+        constexpr Interval UniverseInterval = make_interval(-constants::infinity, constants::infinity);
     }
 }
 

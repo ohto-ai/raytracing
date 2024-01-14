@@ -27,6 +27,7 @@ namespace ohtoai{
         #endif
         };
     }
+    using real = double;
 
     namespace math {
         namespace constants {
@@ -36,19 +37,22 @@ namespace ohtoai{
         #else
             inline constexpr double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067;
         #endif
-            inline constexpr auto infinity = std::numeric_limits<double>::infinity();
+            inline constexpr auto infinity = std::numeric_limits<real>::infinity();
         }
 
-        inline double degrees_to_radians(double degrees) {
+        inline real degrees_to_radians(real degrees) {
             return degrees * constants::pi / 180.0;
         }
 
         static inline std::mt19937 random_gen = std::mt19937(std::random_device()());
+        static inline std::uniform_real_distribution<real> random_dis1(0.0, 1.0);
 
-        template <typename T>
-        inline constexpr T random_real(T min, T max) {
-            std::uniform_real_distribution<T> dis(min, max);
+        inline const real random_real(real min, real max) {
+            std::uniform_real_distribution<real> dis(min, max);
             return dis(random_gen);
+        }
+        inline const real random_real() {
+            return random_dis1(random_gen);
         }
     }
 }

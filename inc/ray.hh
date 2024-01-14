@@ -8,7 +8,6 @@
 
 namespace ohtoai {
     namespace math {
-        template <typename T>
         class Ray {
         public:
             constexpr Ray() = default;
@@ -18,24 +17,20 @@ namespace ohtoai {
             constexpr Ray& operator=(Ray &&) = default;
             ~Ray() = default;
 
-            constexpr Ray(const Point3<T>& origin, const Vector<T, 3>& direction) : o(origin), d(direction) {}
+            constexpr Ray(const Point3& origin, const Vec3& direction) : o(origin), d(direction) {}
 
-            constexpr Point3<T> operator()(T t) const {
+            constexpr Point3 operator()(real t) const {
                 return o + t * d;
             }
 
-            constexpr Point3<T> origin() const { return o; }
-            constexpr Vector<T, 3> direction() const { return d; }
-            constexpr Point3<T> at(T t) const { return o + t * d; }
+            constexpr Point3 origin() const { return o; }
+            constexpr Vec3 direction() const { return d; }
+            constexpr Point3 at(real t) const { return o + t * d; }
 
         private:
-            Point3<T> o;
-            Vector<T, 3> d;
+            Point3 o;
+            Vec3 d;
         };
-
-        using Rayf = Ray<float>;
-        using Rayd = Ray<double>;
-        using Rayi = Ray<int>;
     }
 }
 
