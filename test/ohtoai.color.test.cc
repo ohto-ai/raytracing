@@ -1,15 +1,14 @@
 #include "color.hh"
 #include <catch2/catch.hpp>
 
+using ohtoai::math::Color;
+using make_vector;
+
 TEST_CASE("Color Basic") {
-    REQUIRE(std::is_trivial<ohtoai::math::Color<int>>::value);
-    REQUIRE(std::is_trivial<ohtoai::math::Color<uint8_t>>::value);
-    REQUIRE(std::is_trivial<ohtoai::math::Color<float>>::value);
-    REQUIRE(std::is_trivial<ohtoai::math::Color<double>>::value);
+    REQUIRE(std::is_trivial<Color>::value);
 }
 
 TEST_CASE("Verify Color endian") {
-    using Color = ohtoai::math::Colorf;
     Color c(0x11223344);
 
     REQUIRE(c.red() == 0x11);
@@ -19,7 +18,6 @@ TEST_CASE("Verify Color endian") {
 }
 
 TEST_CASE("Verify Color operator") {
-    using Color = ohtoai::math::Colorf;
     Color c(0x11223344);
 
     c.red() = 0x55;
@@ -36,7 +34,6 @@ TEST_CASE("Verify Color operator") {
 }
 
 TEST_CASE("Verify Color::rgb, Color::rgba") {
-    using Color = ohtoai::math::Colorf;
     Color c;
 
     c = Color::rgb(0x11, 0x22, 0x33);
@@ -55,8 +52,7 @@ TEST_CASE("Verify Color::rgb, Color::rgba") {
 }
 
 TEST_CASE("Verify Color operator Vector3") {
-    using Color = ohtoai::math::Colorf;
-    Color c(ohtoai::math::make_vector(1.0f, 2.0f, 3.0f));
+    Color c(make_vector(1.0f, 2.0f, 3.0f));
 
     REQUIRE(c.red() == 1);
     REQUIRE(c.green() == 2);
@@ -64,7 +60,7 @@ TEST_CASE("Verify Color operator Vector3") {
     REQUIRE(c.alpha() == 0);
     REQUIRE(c.to_easyx_color() == 0x030201);
 
-    c = ohtoai::math::make_vector(5, 6, 7);
+    c = make_vector(5, 6, 7);
     REQUIRE(c.red() == 5);
     REQUIRE(c.green() == 6);
     REQUIRE(c.blue() == 7);
@@ -72,31 +68,30 @@ TEST_CASE("Verify Color operator Vector3") {
 }
 
 TEST_CASE("Verify Color operator Vector") {
-    using Color = ohtoai::math::Colorf;
     Color c;
 
-    c = ohtoai::math::make_vector(1.0f, 2.0f, 3.0f);
+    c = make_vector(1.0f, 2.0f, 3.0f);
     REQUIRE(c.red() == 1);
     REQUIRE(c.green() == 2);
     REQUIRE(c.blue() == 3);
     REQUIRE(c.alpha() == 0);
     REQUIRE(c.to_easyx_color() == 0x030201);
 
-    c = ohtoai::math::make_vector(1.0f, 2.0f, 3.0f, 4.0f);
+    c = make_vector(1.0f, 2.0f, 3.0f, 4.0f);
     REQUIRE(c.red() == 1);
     REQUIRE(c.green() == 2);
     REQUIRE(c.blue() == 3);
     REQUIRE(c.alpha() == 4);
     REQUIRE(c.to_easyx_color() == 0x030201);
 
-    c = ohtoai::math::make_vector(5, 6, 7);
+    c = make_vector(5, 6, 7);
     REQUIRE(c.red() == 5);
     REQUIRE(c.green() == 6);
     REQUIRE(c.blue() == 7);
     REQUIRE(c.alpha() == 0);
     REQUIRE(c.to_easyx_color() == 0x070605);
 
-    c = ohtoai::math::make_vector(11, 12, 13, 14);
+    c = make_vector(11, 12, 13, 14);
     REQUIRE(c.red() == 11);
     REQUIRE(c.green() == 12);
     REQUIRE(c.blue() == 13);

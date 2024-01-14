@@ -38,6 +38,7 @@ namespace ohtoai{
             inline constexpr double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067;
         #endif
             inline constexpr auto infinity = std::numeric_limits<real>::infinity();
+            inline constexpr auto epsilon = std::numeric_limits<real>::epsilon();
         }
 
         inline real degrees_to_radians(real degrees) {

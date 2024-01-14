@@ -93,6 +93,14 @@ namespace ohtoai {
                 return true;
             }
 
+            constexpr bool almost_equal(const Vector& v, real epsilon) const {
+                for (size_t i = 0; i < Dimension; ++i) {
+                    if (std::abs((*this)[i] - v[i]) > epsilon)
+                        return false;
+                }
+                return true;
+            }
+
             constexpr bool operator!=(const Vector& v) const {
                 return !(*this == v);
             }
