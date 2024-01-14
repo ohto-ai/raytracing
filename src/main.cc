@@ -4,12 +4,13 @@
 #include "hittable_list.hh"
 #include "sphere.hh"
 #include <fmt/format.h>
-#include <format>
 #include <chrono>
 #include <thread>
-#define EXPORT_PPM
-#define EXPORT_PNG
+#ifdef _WIN32
 #define EXPORT_EASYX
+#endif
+#define EXPORT_PNG
+#define EXPORT_PPM
 
 
 #if defined(EXPORT_EASYX)

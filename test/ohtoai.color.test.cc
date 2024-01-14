@@ -2,7 +2,7 @@
 #include <catch2/catch.hpp>
 
 using ohtoai::math::Color;
-using make_vector;
+using ohtoai::math::make_vector;
 
 TEST_CASE("Color Basic") {
     REQUIRE(std::is_trivial<Color>::value);
