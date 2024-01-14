@@ -1,6 +1,11 @@
 # raytracing
 [![Cross-platform CI](https://github.com/ohto-ai/raytracing/actions/workflows/ci.yaml/badge.svg)](https://github.com/ohto-ai/raytracing/actions/workflows/ci.yaml)
 
+## Render
+![](doc/img/render.png)
+![](doc/img/render_mt.gif)
+
+## History
 |           Title            |                    Image                    |
 | -------------------------- | ------------------------------------------- |
 | Lambertian distribution    | ![](doc/img/lambertian_distribution.png)    |
@@ -11,6 +16,3 @@
 | Normal                     | ![](doc/img/normal.png)                     |
 | Red sphere                 | ![](doc/img/red_sphere.png)                 |
 | Sky box                    | ![](doc/img/sky_box.png)                    |
-
-## Render
-![PPM](doc/img/render.png)

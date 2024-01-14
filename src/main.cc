@@ -41,6 +41,12 @@ int main() {
     initgraph(camera.image_width, camera.image_height);
     BeginBatchDraw();
 
+    while(true) {
+        if (GetAsyncKeyState(VK_ESCAPE)) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
     {
         auto start = std::chrono::high_resolution_clock::now();
         camera.render(world, [&](int x, int y, const auto& color) {
