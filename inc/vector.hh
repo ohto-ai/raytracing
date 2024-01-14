@@ -114,7 +114,7 @@ namespace ohtoai {
 
             constexpr auto cross(const Vector& v) const {
                 static_assert(Dimension == 3, "Cross product is only defined for 3D vectors");
-                return make_vector(
+                return Vector(
                     (*this)[1] * v[2] - (*this)[2] * v[1],
                     (*this)[2] * v[0] - (*this)[0] * v[2],
                     (*this)[0] * v[1] - (*this)[1] * v[0]);
@@ -148,7 +148,7 @@ namespace ohtoai {
 
         template <size_t Dimension>
         const auto make_random_vector(real min, real max) {
-            Vector<T, Dimension> v;
+            Vector<Dimension> v;
             for (size_t i = 0; i < Dimension; ++i)
                 v[i] = random_real(min, max);
             return v;
