@@ -26,17 +26,33 @@ namespace ohtoai{
             template<typename WriteColorFunc>
             void render(const hittable_type& world, WriteColorFunc func) {
                 initialize();
-                for (int y = 0; y < image_height; ++y) {
-                    const auto height_vec = y * pixel_delta_v;
-                    for (int x = 0; x < image_width; ++x) {
-                        color_type pixel_color {};
-                        for (int s = 0; s < samples_per_pixel; ++s) {
-                            auto ray = get_ray(x, y, height_vec);
-                            pixel_color += ray_color(ray, max_depth, world) * 255;
-                        }
-                        pixel_color /= samples_per_pixel;
-                        func(x, y, pixel_color);
+                int thread_count = std::thread::hardware_concurrency();
+                int line_count = image_height / thread_count;
+                std::vector<std::thread> threads;
+                for (int i = 0; i < thread_count; ++i) {
+                    auto start_y = i * line_count;
+                    auto end_y = (i + 1) * line_count;
+                    if (end_y > image_height) {
+                        end_y = image_height;
+                        break;
                     }
+                    threads.emplace_back([&](int start_y, int end_y) {
+                        for (int y = start_y; y < end_y; ++y) {
+                            const auto height_vec = y * pixel_delta_v;
+                            for (int x = 0; x < image_width; ++x) {
+                                color_type pixel_color {};
+                                for (int s = 0; s < samples_per_pixel; ++s) {
+                                    auto ray = get_ray(x, y, height_vec);
+                                    pixel_color += ray_color(ray, max_depth, world) * 255;
+                                }
+                                pixel_color /= samples_per_pixel;
+                                func(x, y, pixel_color);
+                            }
+                        }
+                    }, start_y, end_y);
+                }
+                for (auto& thread : threads) {
+                    thread.join();
                 }
             }
 
