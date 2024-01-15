@@ -10,6 +10,7 @@
 
 namespace ohtoai{
     namespace math {
+        class Material;
         class HitRecord {
         public:
             void set_face_normal(const Ray& light, const Vec3& outward_normal) {
@@ -22,6 +23,7 @@ namespace ohtoai{
             Vec3 normal;
             real t;
             bool front_face;
+            std::shared_ptr<Material> material;
         };
 
         class Hittable {

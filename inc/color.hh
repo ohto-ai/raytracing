@@ -157,6 +157,11 @@ namespace ohtoai {
             return Color::rgba(v1.red() - v2.red(), v1.green() - v2.green(), v1.blue() - v2.blue(), v1.alpha() - v2.alpha());
         }
 
+        Color operator*(const Color& v1, const Color& v2) {
+            return Color::rgba(v1.red() * v2.red(), v1.green() * v2.green(), v1.blue() * v2.blue(), v1.alpha() * v2.alpha());
+        }
+
+
         Color operator*(const Color& v, real t) {
             return Color::rgba(v.red() * t, v.green() * t, v.blue() * t, v.alpha() * t);
         }

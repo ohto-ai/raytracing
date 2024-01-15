@@ -6,14 +6,15 @@
 ![](doc/img/render_mt.gif)
 
 ## History
-|           Title            |                    Image                    |
-| -------------------------- | ------------------------------------------- |
-| Gama Correction            | ![](doc/img/gama_correction.png)            |
-| Lambertian distribution    | ![](doc/img/lambertian_distribution.png)    |
-| Diffuse reflection Enhance | ![](doc/img/diffuse_reflection_enhance.png) |
-| Diffuse reflection         | ![](doc/img/diffuse_reflection.png)         |
-| Samples per pixel          | ![](doc/img/samples_per_pixel.png)          |
-| Sphere with ground         | ![](doc/img/sphere_with_ground.png)         |
-| Normal                     | ![](doc/img/normal.png)                     |
-| Red sphere                 | ![](doc/img/red_sphere.png)                 |
-| Sky box                    | ![](doc/img/sky_box.png)                    |
+|             Title             |                     Image                      |
+| ----------------------------- | ---------------------------------------------- |
+| Metal and Lambertian material | ![](doc/img/metal_and_lambertian_material.png) |
+| Gama correction               | ![](doc/img/gama_correction.png)               |
+| Lambertian distribution       | ![](doc/img/lambertian_distribution.png)       |
+| Diffuse reflection Enhance    | ![](doc/img/diffuse_reflection_enhance.png)    |
+| Diffuse reflection            | ![](doc/img/diffuse_reflection.png)            |
+| Samples per pixel             | ![](doc/img/samples_per_pixel.png)             |
+| Sphere with ground            | ![](doc/img/sphere_with_ground.png)            |
+| Normal                        | ![](doc/img/normal.png)                        |
+| Red sphere                    | ![](doc/img/red_sphere.png)                    |
+| Sky box                       | ![](doc/img/sky_box.png)                       |

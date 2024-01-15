@@ -101,6 +101,14 @@ namespace ohtoai {
                 return true;
             }
 
+            bool near_zero() const {
+                const auto s = 1e-8;
+                for (size_t i = 0; i < Dimension; ++i)
+                    if (std::abs((*this)[i]) > s)
+                        return false;
+                return true;
+            }
+
             bool operator!=(const Vector& v) const {
                 return !(*this == v);
             }
@@ -110,6 +118,10 @@ namespace ohtoai {
                 for (size_t i = 0; i < Dimension; ++i)
                     sum += (*this)[i] * v[i];
                 return sum;
+            }
+
+            Vector reflect(const Vector& normal) const {
+                return *this - 2 * this->dot(normal) * normal;
             }
 
             auto cross(const Vector& v) const {
@@ -154,7 +166,7 @@ namespace ohtoai {
             return v;
         }
 
-        const auto generate_random_vector_in_sphere() {
+        const auto random_in_unit_sphere() {
             while (true) {
                 auto v = make_random_vector<3>();
                 if (v.length2() <= 1.0)
@@ -162,12 +174,12 @@ namespace ohtoai {
             }
         }
 
-        const auto generate_random_vector_on_sphere() {
-            return generate_random_vector_in_sphere().normalized();
+        const auto random_unit_vector() {
+            return random_in_unit_sphere().normalized();
         }
 
-        const auto generate_random_vector_on_hemisphere(const Vector<3>& normal) {
-            auto v = generate_random_vector_on_sphere();
+        const auto random_unit_vector_on_hemisphere(const Vector<3>& normal) {
+            auto v = random_unit_vector();
             if (v.dot(normal) > 0)
                 return v;
             else

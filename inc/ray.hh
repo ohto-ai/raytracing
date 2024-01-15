@@ -31,6 +31,10 @@ namespace ohtoai {
             Point3 o;
             Vec3 d;
         };
+
+        Ray make_ray(const Point3& origin, const Vec3& direction) {
+            return Ray(origin, direction);
+        }
     }
 }
 

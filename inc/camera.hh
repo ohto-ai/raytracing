@@ -7,6 +7,7 @@
 #include "hittable.hh"
 #include "hittable_list.hh"
 #include "color.hh"
+#include "material.hh"
 #include <thread>
 
 namespace ohtoai{
@@ -55,8 +56,13 @@ namespace ohtoai{
                     return {};
                 }
                 if (world.hit(light, make_interval(0.001, ohtoai::math::constants::infinity), record)) {
-                    Vec3 direction = record.normal + generate_random_vector_on_sphere();
-                    return 0.5 * ray_color(Ray(record.point, direction), depth - 1, world);
+                    Ray scattered;
+                    Color attenuation;
+                    if (record.material->scatter(light, record, attenuation, scattered)) {
+                        return attenuation * ray_color(scattered, depth - 1, world);
+                    } else {
+                        return {};
+                    }
                 }
 
                 // background

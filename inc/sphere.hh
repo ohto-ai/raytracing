@@ -11,7 +11,7 @@ namespace ohtoai{
         class Sphere : public Hittable {
         public:
             Sphere() = default;
-            Sphere(const Point3& center, real radius) : center_(center), radius_(radius) {}
+            Sphere(const Point3& center, real radius, std::shared_ptr<Material> material = nullptr) : center_(center), radius_(radius), material_(material) {}
 
             virtual bool hit(const Ray& light, const Interval& ray_range, HitRecord& rec) const override {
                 Vec3 origin = light.origin() - center_;
@@ -31,6 +31,7 @@ namespace ohtoai{
                     }
                     rec.t = t;
                     rec.point = light.at(t);
+                    rec.material = material_;
                     rec.set_face_normal(light, (rec.point - center_) / radius_);
                     return true;
                 }
@@ -39,6 +40,7 @@ namespace ohtoai{
         private:
             Point3 center_;
             real radius_;
+            std::shared_ptr<Material> material_;
         };
     }
 }

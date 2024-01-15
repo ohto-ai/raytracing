@@ -27,11 +27,18 @@
 int main() {
     ohtoai::math::Camera camera;
     ohtoai::math::HittableList world;
-    auto ground_sphere = std::make_shared<ohtoai::math::Sphere>(ohtoai::math::make_point(0, 0, -1), 0.5);
-    auto fake_ground = std::make_shared<ohtoai::math::Sphere>(ohtoai::math::make_point(0, -100.5, -1), 100);
+    using ohtoai::math::Sphere;
+    using ohtoai::math::Color;
 
-    world.add(ground_sphere);
-    world.add(fake_ground);
+    auto MaterialGround = std::make_shared<ohtoai::math::Lambertian>(Color(0.8, 0.8, 0.0));
+    auto MaterialCenter = std::make_shared<ohtoai::math::Lambertian>(Color(0.7, 0.3, 0.3));
+    auto MaterialLeft = std::make_shared<ohtoai::math::Metal>(Color(0.8, 0.8, 0.8));
+    auto MaterialRight = std::make_shared<ohtoai::math::Metal>(Color(0.8, 0.6, 0.2));
+
+    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(0.0, -100.5, -1.0), 100.0, MaterialGround));
+    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(0.0, 0.0, -1.0), 0.5, MaterialCenter));
+    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(-1.0, 0.0, -1.0), 0.5, MaterialLeft));
+    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(1.0, 0.0, -1.0), 0.5, MaterialRight));
 
     camera.aspect_ratio = 16.0 / 9.0;
     camera.image_width = 640;
