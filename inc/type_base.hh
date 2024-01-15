@@ -45,6 +45,10 @@ namespace ohtoai{
             return degrees * constants::pi / 180.0;
         }
 
+        inline real liner_to_gamma(real liner) {
+            return std::sqrt(liner);
+        }
+
         static inline std::mt19937 random_gen = std::mt19937(std::random_device()());
         static inline std::uniform_real_distribution<real> random_dis1(0.0, 1.0);
 

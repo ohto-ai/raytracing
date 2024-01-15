@@ -38,6 +38,7 @@ namespace ohtoai{
                                     pixel_color += ray_color(ray, max_depth, world) * 255;
                                 }
                                 pixel_color /= samples_per_pixel;
+                                pixel_color = pixel_color.gamma_correction();
                                 func(x, y, pixel_color);
                             }
                         }

@@ -8,6 +8,7 @@
 ## History
 |           Title            |                    Image                    |
 | -------------------------- | ------------------------------------------- |
+| Gama Correction            | ![](doc/img/gama_correction.png)            |
 | Lambertian distribution    | ![](doc/img/lambertian_distribution.png)    |
 | Diffuse reflection Enhance | ![](doc/img/diffuse_reflection_enhance.png) |
 | Diffuse reflection         | ![](doc/img/diffuse_reflection.png)         |

@@ -55,6 +55,10 @@ namespace ohtoai {
                 return *this;
             }
 
+            Color gamma_correction() const {
+                return Color(liner_to_gamma(red() / 255.0) * 255, liner_to_gamma(green() / 255.0) * 255, liner_to_gamma(blue()/255.0) * 255, alpha());
+            }
+
             using Vec4::operator[];
             using Vec4::operator==;
             using Vec4::operator!=;

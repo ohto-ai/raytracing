@@ -59,8 +59,8 @@ int main() {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         fmt::print("Use {} thread rendering time: {}ms\n", std::thread::hardware_concurrency(), duration);
     }
-
     EndBatchDraw();
+    saveimage("render.bmp");
     while(true) {
         if (GetAsyncKeyState(VK_ESCAPE)) {
             break;
