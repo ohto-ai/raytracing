@@ -30,15 +30,13 @@ int main() {
     using ohtoai::math::Sphere;
     using ohtoai::math::Color;
 
-    auto MaterialGround = std::make_shared<ohtoai::math::Lambertian>(Color(0.8, 0.8, 0.0));
-    auto MaterialCenter = std::make_shared<ohtoai::math::Lambertian>(Color(0.7, 0.3, 0.3));
-    auto MaterialLeft = std::make_shared<ohtoai::math::Metal>(Color(0.8, 0.8, 0.8), 0.3);
-    auto MaterialRight = std::make_shared<ohtoai::math::Metal>(Color(0.8, 0.6, 0.2), 1.0);
+    auto MaterialGround = std::make_shared<ohtoai::math::Lambertian>(Color::rgb(0xCCCC00).to_unit());
+    auto MaterialLeft = std::make_shared<ohtoai::math::Metal>(Color::rgb(0xCCCCCC).to_unit(), 0.3);
+    auto MaterialRight = std::make_shared<ohtoai::math::Metal>(Color::rgb(0xCC9933).to_unit(), 0.2);
 
     world.add(std::make_shared<Sphere>(ohtoai::math::make_point(0.0, -100.5, -1.0), 100.0, MaterialGround));
-    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(0.0, 0.0, -1.0), 0.5, MaterialCenter));
-    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(-1.0, 0.0, -1.0), 0.5, MaterialLeft));
-    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(1.0, 0.0, -1.0), 0.5, MaterialRight));
+    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(-0.8, 0.0, -1.0), 0.5, MaterialLeft));
+    world.add(std::make_shared<Sphere>(ohtoai::math::make_point(0.8, 0.0, -1.0), 0.5, MaterialRight));
 
     camera.aspect_ratio = 16.0 / 9.0;
     camera.image_width = 640;
