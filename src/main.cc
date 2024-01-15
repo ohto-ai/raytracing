@@ -39,6 +39,7 @@ int main() {
     camera.samples_per_pixel = 100;
     camera.max_depth = 50;
 
+#ifdef EXPORT_EASYX
     initgraph(camera.image_width, camera.image_height);
     BeginBatchDraw();
 
@@ -67,6 +68,7 @@ int main() {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     closegraph();
+#endif // EXPORT_EASYX
     return 0;
 }
 

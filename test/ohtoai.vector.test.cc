@@ -5,6 +5,14 @@ using ohtoai::math::make_vector;
 
 TEST_CASE("Vector Basic") {
     REQUIRE(std::is_trivial<Vec3>::value);
+    auto vec3 = make_vector(1, 2, 3);
+    REQUIRE(vec3[0] == 1);
+    REQUIRE(vec3[1] == 2);
+    REQUIRE(vec3[2] == 3);
+    Vec3 vec3_default{};
+    REQUIRE(vec3_default[0] == 0);
+    REQUIRE(vec3_default[1] == 0);
+    REQUIRE(vec3_default[2] == 0);
 }
 
 TEST_CASE("Verify Vector operator") {

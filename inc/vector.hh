@@ -18,16 +18,16 @@ namespace ohtoai {
         public:
             using array_type = std::array<real, Dimension>;
 
-            constexpr Vector() = default;
-            constexpr Vector(const Vector&) = default;
-            constexpr Vector(Vector&&) = default;
-            constexpr Vector& operator=(const Vector&) = default;
-            constexpr Vector& operator=(Vector &&) = default;
+            Vector() = default;
+            Vector(const Vector&) = default;
+            Vector(Vector&&) = default;
+            Vector& operator=(const Vector&) = default;
+            Vector& operator=(Vector &&) = default;
             ~Vector() = default;
 
-            template<typename... Args>
-            constexpr explicit Vector(Args ...args) : array_type {{static_cast<real>(args)...}} {
-                static_assert(sizeof...(args) == Dimension, "Number of arguments must match the vector size");
+            template<typename Arg, typename... Args>
+            explicit Vector(Arg first, Args ...args) : array_type {{static_cast<real>(first), static_cast<real>(args)...}} {
+                static_assert(sizeof...(args) + 1 == Dimension, "Number of arguments must match the vector size");
             }
 
             Vector& operator+=(const Vector& v) {
@@ -86,14 +86,14 @@ namespace ohtoai {
                 return *this / length();
             }
 
-            constexpr bool operator==(const Vector& v) const {
+            bool operator==(const Vector& v) const {
                 for (size_t i = 0; i < Dimension; ++i)
                     if ((*this)[i] != v[i])
                         return false;
                 return true;
             }
 
-            constexpr bool almost_equal(const Vector& v, real epsilon) const {
+            bool almost_equal(const Vector& v, real epsilon) const {
                 for (size_t i = 0; i < Dimension; ++i) {
                     if (std::abs((*this)[i] - v[i]) > epsilon)
                         return false;
@@ -101,18 +101,18 @@ namespace ohtoai {
                 return true;
             }
 
-            constexpr bool operator!=(const Vector& v) const {
+            bool operator!=(const Vector& v) const {
                 return !(*this == v);
             }
 
-            constexpr real dot(const Vector& v) const {
+            real dot(const Vector& v) const {
                 real sum = 0;
                 for (size_t i = 0; i < Dimension; ++i)
                     sum += (*this)[i] * v[i];
                 return sum;
             }
 
-            constexpr auto cross(const Vector& v) const {
+            auto cross(const Vector& v) const {
                 static_assert(Dimension == 3, "Cross product is only defined for 3D vectors");
                 return Vector(
                     (*this)[1] * v[2] - (*this)[2] * v[1],
@@ -120,7 +120,7 @@ namespace ohtoai {
                     (*this)[0] * v[1] - (*this)[1] * v[0]);
             }
 
-            constexpr size_t size() const { return Dimension; }
+            size_t size() const { return Dimension; }
 
             real& x() { return (*this)[0]; }
             real& y() { return (*this)[1]; }
@@ -134,7 +134,7 @@ namespace ohtoai {
         };
 
         template <typename... Args>
-        constexpr auto make_vector(Args... args) {
+        auto make_vector(Args... args) {
             return Vector<sizeof...(args)>(std::forward<Args>(args)...);
         }
 
@@ -175,36 +175,36 @@ namespace ohtoai {
         }
 
         template<size_t Dimension>
-        constexpr Vector<Dimension> operator+(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
+        Vector<Dimension> operator+(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
             Vector<Dimension> sum(v1);
             return sum += v2;
         }
 
         template<size_t Dimension>
-        constexpr Vector<Dimension> operator-(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
+        Vector<Dimension> operator-(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
             Vector<Dimension> diff(v1);
             return diff -= v2;
         }
 
         template<size_t Dimension>
-        constexpr Vector<Dimension> operator*(const Vector<Dimension>& v, real t) {
+        Vector<Dimension> operator*(const Vector<Dimension>& v, real t) {
             Vector<Dimension> prod(v);
             return prod *= t;
         }
 
         template<size_t Dimension>
-        constexpr Vector<Dimension> operator*(real t, const Vector<Dimension>& v) {
+        Vector<Dimension> operator*(real t, const Vector<Dimension>& v) {
             return v * t;
         }
 
         template<size_t Dimension>
-        constexpr Vector<Dimension> operator/(const Vector<Dimension>& v, real t) {
+        Vector<Dimension> operator/(const Vector<Dimension>& v, real t) {
             Vector<Dimension> quot(v);
             return quot /= t;
         }
 
         template<size_t Dimension>
-        constexpr Vector<Dimension> operator*(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
+        Vector<Dimension> operator*(const Vector<Dimension>& v1, const Vector<Dimension>& v2) {
             Vector<Dimension> prod(v1);
             return prod *= v2;
         }
@@ -214,7 +214,7 @@ namespace ohtoai {
         using Vec4 = Vector<4>;
 
         template <typename... Args>
-        constexpr auto make_point(Args... args) {
+        auto make_point(Args... args) {
             return make_vector(std::forward<Args>(args)...);
         }
         using Point2 = Vector<2>;

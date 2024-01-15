@@ -7,6 +7,7 @@
 #include "hittable.hh"
 #include "hittable_list.hh"
 #include "color.hh"
+#include <thread>
 
 namespace ohtoai{
     namespace math {

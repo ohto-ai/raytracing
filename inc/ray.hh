@@ -10,22 +10,22 @@ namespace ohtoai {
     namespace math {
         class Ray {
         public:
-            constexpr Ray() = default;
-            constexpr Ray(const Ray&) = default;
-            constexpr Ray(Ray&&) = default;
-            constexpr Ray& operator=(const Ray&) = default;
-            constexpr Ray& operator=(Ray &&) = default;
+            Ray() = default;
+            Ray(const Ray&) = default;
+            Ray(Ray&&) = default;
+            Ray& operator=(const Ray&) = default;
+            Ray& operator=(Ray &&) = default;
             ~Ray() = default;
 
-            constexpr Ray(const Point3& origin, const Vec3& direction) : o(origin), d(direction) {}
+            Ray(const Point3& origin, const Vec3& direction) : o(origin), d(direction) {}
 
-            constexpr Point3 operator()(real t) const {
+            Point3 operator()(real t) const {
                 return o + t * d;
             }
 
-            constexpr Point3 origin() const { return o; }
-            constexpr Vec3 direction() const { return d; }
-            constexpr Point3 at(real t) const { return o + t * d; }
+            Point3 origin() const { return o; }
+            Vec3 direction() const { return d; }
+            Point3 at(real t) const { return o + t * d; }
 
         private:
             Point3 o;
