@@ -9,6 +9,7 @@
 ## History
 |             Title             |                     Image                      |
 | ----------------------------- | ---------------------------------------------- |
+| Refract Dielectric            | ![](doc/img/refract_dielectric.png)            |
 | Metal with fuzz               | ![](doc/img/metal_with_fuzz.png)               |
 | Metal and Lambertian material | ![](doc/img/metal_and_lambertian_material.png) |
 | Gama correction               | ![](doc/img/gama_correction.png)               |

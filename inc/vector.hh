@@ -124,6 +124,13 @@ namespace ohtoai {
                 return *this - 2 * this->dot(normal) * normal;
             }
 
+            Vector refract(const Vector& normal, real etai_over_etat) const {
+                const auto cos_theta = std::min(-this->dot(normal), 1.0);
+                const auto r_out_perp = etai_over_etat * (*this + cos_theta * normal);
+                const auto r_out_parallel = -std::sqrt(std::abs(1.0 - r_out_perp.length2())) * normal;
+                return r_out_perp + r_out_parallel;
+            }
+
             auto cross(const Vector& v) const {
                 static_assert(Dimension == 3, "Cross product is only defined for 3D vectors");
                 return Vector(
