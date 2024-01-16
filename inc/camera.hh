@@ -77,27 +77,37 @@ namespace ohtoai{
             real aspect_ratio = 16.0 / 9.0;
             int samples_per_pixel = 10;
             int max_depth = 10;
+            real v_fov = 90;
+            Point3 look_from = make_point(0, 0, -1);
+            Point3 look_at = make_point(0, 0, 0);
+            Vec3 view_up = make_vector(0, 1, 0);
 
         protected:
             void initialize() {
                 image_height = image_width > aspect_ratio ? static_cast<int>(image_width / aspect_ratio) : 1;
 
                 // camera
-                const auto focal_length = 1.0;
-                const auto viewport_height = 2.0;
+                const auto focal_length = (look_from - look_at).length();
+                const auto theta = degrees_to_radians(v_fov);
+                const auto h = tan(theta / 2);
+                const auto viewport_height = 2 * h * focal_length;
                 const auto viewport_width = viewport_height * (static_cast<double>(image_width) / image_height);
-                camera_center = make_point(0, 0, 0);
+                camera_center = look_from;
+
+                w = (look_from - look_at).normalized();
+                u = view_up.cross(w).normalized();
+                v = w.cross(u);
 
                 // 计算横纵向量 u 和 v
-                const auto viewport_u = make_vector(viewport_width, 0, 0);
-                const auto viewport_v = make_vector(0, -viewport_height, 0);
+                const auto viewport_u = viewport_width * u;
+                const auto viewport_v = viewport_height * -v;
 
                 // 由像素间距计算横纵增量向量
                 pixel_delta_u = viewport_u / image_width;
                 pixel_delta_v = viewport_v / image_height;
 
                 // 计算左上角像素的位置
-                const auto viewport_upper_left = camera_center - make_vector(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
+                const auto viewport_upper_left = camera_center - focal_length * w - viewport_u / 2 - viewport_v / 2;
                 pixel100_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
             }
             Ray get_ray(int x, int y, const Vec3& height_vec) const {
@@ -113,6 +123,9 @@ namespace ohtoai{
             Vec3 pixel_delta_u;
             Vec3 pixel_delta_v;
             Point3 pixel100_loc;
+            Vec3 u;
+            Vec3 v;
+            Vec3 w;
         };
     }
 }

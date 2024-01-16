@@ -46,6 +46,10 @@ int main() {
     camera.image_height = 360;
     camera.samples_per_pixel = 100;
     camera.max_depth = 50;
+    camera.v_fov = 90;
+    camera.look_from = ohtoai::math::make_point(-2, 2, 1);
+    camera.look_at = ohtoai::math::make_point(0, 0, -1);
+    camera.view_up = ohtoai::math::make_vector(0, 1, 0);
 
 #ifdef EXPORT_EASYX
     initgraph(camera.image_width, camera.image_height);
