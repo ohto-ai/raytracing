@@ -3,6 +3,7 @@
 
 ## Render
 ![](doc/img/render.png)
+![](doc/img/render_2k.png)
 ![](doc/img/render_mt.gif)
 
 ## History
