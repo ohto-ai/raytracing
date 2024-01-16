@@ -68,7 +68,7 @@ namespace ohtoai{
                 // background
                 auto unit_direction = light.direction().normalized();
                 const auto a = 0.5 * (unit_direction.y() + 1.0);
-                auto result = Color::rgb(1, 1, 1).mix(Color::rgb(0.5, 0.7, 1.0), a);
+                auto result = Color::rgb(0xffffff).mix(Color::rgb(0x80B3FF), a).to_unit();
                 return result;
             }
         public:
