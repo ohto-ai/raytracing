@@ -74,6 +74,10 @@ namespace ohtoai {
                 return sum;
             }
 
+            auto length_squared() const {
+                return length2();
+            }
+
             auto length() const {
                 return std::sqrt(length2());
             }
@@ -84,6 +88,10 @@ namespace ohtoai {
 
             Vector normalized() const {
                 return *this / length();
+            }
+
+            Vector unit() const {
+                return normalized();
             }
 
             bool operator==(const Vector& v) const {
@@ -176,6 +184,14 @@ namespace ohtoai {
         const auto random_in_unit_sphere() {
             while (true) {
                 auto v = make_random_vector<3>();
+                if (v.length2() <= 1.0)
+                    return v;
+            }
+        }
+
+        const auto random_in_unit_disk() {
+            while (true) {
+                auto v = make_vector(random_real(-1, 1), random_real(-1, 1), 0);
                 if (v.length2() <= 1.0)
                     return v;
             }

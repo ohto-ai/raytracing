@@ -87,6 +87,10 @@ namespace ohtoai {
                 return Color(red() / 255.0, green() / 255.0, blue() / 255.0, alpha());
             }
 
+            Color to_ununit() const {
+                return Color(red() * 255.0, green() * 255.0, blue() * 255.0, alpha());
+            }
+
             uint32_t to_rgba() const {
                 return to_color<24, 16, 8, 0>();
             }
