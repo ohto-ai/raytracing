@@ -16,8 +16,9 @@ namespace ohtoai{
         public:
             Camera() = default;
 
+            // 光追渲染
             template<typename WriteColorFunc>
-            void render(const HittableList& world, WriteColorFunc func) {
+            void render_ray_tracing(const HittableList& world, WriteColorFunc func) {
                 initialize();
                 int thread_count = std::thread::hardware_concurrency();
                 int line_count = image_height / thread_count;
@@ -47,6 +48,22 @@ namespace ohtoai{
                 }
                 for (auto& thread : threads) {
                     thread.join();
+                }
+            }
+
+            // 光栅渲染
+            template <typename WriteColorFunc>
+            void render_raster(const HittableList& world, WriteColorFunc func) {
+                initialize();
+                for (int y = 0; y < image_height; ++y) {
+                    const auto height_vec = y * pixel_delta_v;
+                    for (int x = 0; x < image_width; ++x) {
+                        Color pixel_color {};
+                        // 按光栅渲染
+
+                        pixel_color = pixel_color.gamma_correction();
+                        func(x, y, pixel_color);
+                    }
                 }
             }
 

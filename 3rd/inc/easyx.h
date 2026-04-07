@@ -1,5 +1,5 @@
 /******************************************************
- * EasyX Library for C++ (Ver:2023�����)
+ * EasyX Library for C++ (Ver:20240225)
  * https://easyx.cn
  *
  * EasyX.h

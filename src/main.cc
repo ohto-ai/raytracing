@@ -42,8 +42,11 @@ int main() {
     world.add(std::make_shared<Sphere>(ohtoai::math::make_point(1.0, 0.0, -1.0), 0.5, MaterialRight));
 
     camera.aspect_ratio = 16.0 / 9.0;
-    camera.image_width = 640;
-    camera.image_height = 360;
+    int ratio = 4;
+    camera.image_width = 640 / ratio;
+    camera.image_height = 360 / ratio;
+    //camera.image_width = 640;
+    //camera.image_height = 360;
     camera.samples_per_pixel = 100;
     camera.max_depth = 50;
     camera.v_fov = 90;
@@ -52,7 +55,7 @@ int main() {
     camera.view_up = ohtoai::math::make_vector(0, 1, 0);
 
 #ifdef EXPORT_EASYX
-    initgraph(camera.image_width, camera.image_height);
+    initgraph(camera.image_width * ratio, camera.image_height * ratio);
     BeginBatchDraw();
 
     while(true) {
@@ -63,8 +66,14 @@ int main() {
     }
     {
         auto start = std::chrono::high_resolution_clock::now();
-        camera.render(world, [&](int x, int y, const auto& color) {
-            putpixel(x, y, color.to_easyx_color());
+        render_ray_tracing
+        camera.render_ray_tracing(world, [&](int x, int y, const auto& color) {
+            auto easyx_color = color.to_easyx_color();
+            for (int i = 0; i < ratio; ++i) {
+                for (int j = 0; j < ratio; ++j) {
+                    putpixel(x * ratio + i, y * ratio + j, easyx_color);
+                }
+            }
             FlushBatchDraw();
         });
         auto end = std::chrono::high_resolution_clock::now();
