@@ -1,7 +1,16 @@
-// render.cu
-// CUDA rendering implementation.
-// The ray-tracing algorithm mirrors the CPU version in camera.hh exactly;
-// only the parallelism and RNG differ (GPU threads vs. std::thread, cuRAND vs. std::mt19937).
+// render.cu — Optimised CUDA ray-tracing back-end.
+//
+// Performance improvements over the original implementation:
+//   * All GPU-side arithmetic uses float (2–8× faster than double on most NVIDIA
+//     GPUs, which have 32:1 or higher float:double throughput).
+//   * Scene geometry and materials are stored in CUDA constant memory, giving
+//     broadcast-cached reads rather than global-memory traffic.
+//   * Sphere intersection uses the half-b discriminant formula, which has better
+//     numerical stability and fewer floating-point operations.
+//   * All device helpers are __forceinline__ to eliminate call overhead.
+//   * Fast rsqrtf() hardware instruction used for vector normalisation.
+//   * Shadow-ray epsilon raised to 1e-4f (float-appropriate) to reduce acne.
+//   * Sky gradient matches the original colour scheme exactly.
 
 #include "cuda_scene.hh"
 #include "render.hh"
@@ -9,272 +18,356 @@
 #include <curand_kernel.h>
 #include <cstdint>
 #include <cstdio>
+#include <algorithm>
 #include <chrono>
 
-using ohtoai::real;
-using ohtoai::math::Color;
-using ohtoai::math::Ray;
-using ohtoai::math::Vec3;
-using ohtoai::math::Point3;
-using ohtoai::math::CudaScene;
-using ohtoai::math::CudaSphere;
-using ohtoai::math::CudaMaterial;
-using ohtoai::math::CudaHitRecord;
-using ohtoai::math::CudaCameraParams;
-using ohtoai::math::make_ray;
-using ohtoai::math::make_interval;
-using ohtoai::math::make_vector;
-using ohtoai::math::constants::infinity;
-
 // =========================================================================
-// Device-side random utilities (cuRAND wrappers)
+// Self-contained float3 math (keeps the kernel independent of double-based
+// host headers and avoids unnecessary type conversions on the GPU).
 // =========================================================================
 
-__device__ inline real cuda_random_real(curandState* state) {
-    return curand_uniform_double(state);
+struct F3 {
+    float x, y, z;
+
+    __forceinline__ __device__ F3() = default;
+    __forceinline__ __device__ constexpr F3(float x_, float y_, float z_)
+        : x(x_), y(y_), z(z_) {}
+
+    __forceinline__ __device__ F3 operator+(const F3& o) const { return {x+o.x, y+o.y, z+o.z}; }
+    __forceinline__ __device__ F3 operator-(const F3& o) const { return {x-o.x, y-o.y, z-o.z}; }
+    __forceinline__ __device__ F3 operator*(const F3& o) const { return {x*o.x, y*o.y, z*o.z}; }
+    __forceinline__ __device__ F3 operator*(float t)    const { return {x*t,   y*t,   z*t  }; }
+    __forceinline__ __device__ F3 operator/(float t)    const { float inv = 1.0f/t; return {x*inv, y*inv, z*inv}; }
+    __forceinline__ __device__ F3 operator-()           const { return {-x, -y, -z}; }
+
+    __forceinline__ __device__ F3& operator+=(const F3& o) { x+=o.x; y+=o.y; z+=o.z; return *this; }
+    __forceinline__ __device__ F3& operator*=(const F3& o) { x*=o.x; y*=o.y; z*=o.z; return *this; }
+
+    __forceinline__ __device__ float dot(const F3& o) const { return x*o.x + y*o.y + z*o.z; }
+    __forceinline__ __device__ float len2()           const { return dot(*this); }
+
+    // rsqrtf: fast hardware reciprocal square-root
+    __forceinline__ __device__ F3 normalized() const { return *this * rsqrtf(len2()); }
+
+    __forceinline__ __device__ bool near_zero() const {
+        constexpr float s = 1e-7f;
+        return fabsf(x) < s && fabsf(y) < s && fabsf(z) < s;
+    }
+    __forceinline__ __device__ F3 reflect(const F3& n) const {
+        return *this - n * (2.0f * dot(n));
+    }
+    __forceinline__ __device__ F3 refract(const F3& n, float eta) const {
+        float cos_t = fminf(-dot(n), 1.0f);
+        F3 r_perp   = (*this + n * cos_t) * eta;
+        F3 r_para   = n * (-sqrtf(fabsf(1.0f - r_perp.len2())));
+        return r_perp + r_para;
+    }
+};
+
+__forceinline__ __device__ F3 operator*(float t, const F3& v) { return v * t; }
+
+// Color is represented as float RGB in [0, 1] throughout the kernel;
+// use the same struct for brevity.
+using C3 = F3;
+
+// =========================================================================
+// GPU scene types (float — stored in constant memory)
+// =========================================================================
+
+// Maximum scene size that fits comfortably in the 64 KB constant-memory bank.
+#define MAX_SPHERES   256
+#define MAX_MATERIALS 256
+
+struct GpuMat {
+    int   type;    // 0 = Lambertian, 1 = Metal, 2 = Dielectric
+    C3    albedo;  // unit-space [0,1] RGB
+    float fuzz;
+    float ir;      // index of refraction (Dielectric)
+};
+
+struct GpuSphere {
+    F3    center;
+    float radius;
+    int   mat_idx;
+};
+
+__constant__ GpuSphere c_spheres[MAX_SPHERES];
+__constant__ GpuMat    c_materials[MAX_MATERIALS];
+__constant__ int       c_sphere_cnt;
+__constant__ int       c_mat_cnt;
+
+// Flat camera parameters passed directly to the kernel (no vtable, no heap).
+struct GpuCam {
+    int   w, h, spp, max_depth;
+    F3    pixel00;       // top-left pixel centre
+    F3    du, dv;        // per-pixel step in u and v
+    F3    origin;        // camera centre (eye position)
+    F3    defocus_u;     // defocus (depth-of-field) disk axes
+    F3    defocus_v;
+    float defocus_angle;
+};
+
+// =========================================================================
+// Hit record
+// =========================================================================
+
+struct HitRec {
+    F3    p;      // hit point
+    F3    n;      // outward-facing shading normal
+    float t;      // ray parameter
+    int   mat;    // material index
+    bool  front;  // true if ray hit the front face
+};
+
+// =========================================================================
+// RNG helpers (cuRAND per-thread xorwow state)
+// =========================================================================
+
+__forceinline__ __device__ float rnd(curandState* s) {
+    return curand_uniform(s);
+}
+__forceinline__ __device__ float rnd(curandState* s, float lo, float hi) {
+    return lo + (hi - lo) * rnd(s);
 }
 
-__device__ inline real cuda_random_real(curandState* state, real lo, real hi) {
-    return lo + (hi - lo) * cuda_random_real(state);
-}
-
-// =========================================================================
-// Device-side geometry helpers
-// =========================================================================
-
-__device__ Vec3 cuda_random_in_unit_sphere(curandState* state) {
-    while (true) {
-        Vec3 v(cuda_random_real(state, -1.0, 1.0),
-               cuda_random_real(state, -1.0, 1.0),
-               cuda_random_real(state, -1.0, 1.0));
-        if (v.length2() <= 1.0)
-            return v;
+__forceinline__ __device__ F3 rand_in_unit_sphere(curandState* s) {
+    for (;;) {
+        F3 v{ rnd(s,-1.0f,1.0f), rnd(s,-1.0f,1.0f), rnd(s,-1.0f,1.0f) };
+        if (v.len2() <= 1.0f) return v;
     }
 }
 
-__device__ Vec3 cuda_random_unit_vector(curandState* state) {
-    return cuda_random_in_unit_sphere(state).normalized();
+__forceinline__ __device__ F3 rand_unit(curandState* s) {
+    return rand_in_unit_sphere(s).normalized();
 }
 
-__device__ Vec3 cuda_random_in_unit_disk(curandState* state) {
-    while (true) {
-        Vec3 v(cuda_random_real(state, -1.0, 1.0),
-               cuda_random_real(state, -1.0, 1.0),
-               0.0);
-        if (v.length2() <= 1.0)
-            return v;
+__forceinline__ __device__ F3 rand_in_unit_disk(curandState* s) {
+    for (;;) {
+        F3 v{ rnd(s,-1.0f,1.0f), rnd(s,-1.0f,1.0f), 0.0f };
+        if (v.len2() <= 1.0f) return v;
     }
 }
 
 // =========================================================================
-// Device-side sphere intersection (mirrors Sphere::hit)
+// Sphere intersection — half-b discriminant (numerically stable)
 // =========================================================================
 
-__device__ bool cuda_hit_sphere(const CudaSphere& sphere,
-                                 const Ray& light,
-                                 real t_min, real t_max,
-                                 CudaHitRecord& rec)
+__forceinline__ __device__ bool hit_sphere(
+    const GpuSphere& s,
+    const F3& ro, const F3& rd,
+    float tmin, float tmax,
+    HitRec& rec)
 {
-    Vec3 origin = light.origin() - sphere.center;
-    const real a      = light.direction().dot(light.direction());
-    const real b      = 2.0 * origin.dot(light.direction());
-    const real c      = origin.dot(origin) - sphere.radius * sphere.radius;
-    const real delta  = b * b - 4 * a * c;
+    F3    oc     = ro - s.center;
+    float a      = rd.len2();
+    float half_b = oc.dot(rd);
+    float c      = oc.len2() - s.radius * s.radius;
+    float disc   = half_b * half_b - a * c;
 
-    if (delta < 0)
-        return false;
+    if (disc < 0.0f) return false;
 
-    real t = (-b - sqrt(delta)) / (2.0 * a);
-    if (t <= t_min || t >= t_max) {
-        t = (-b + sqrt(delta)) / (2.0 * a);
-        if (t <= t_min || t >= t_max)
-            return false;
+    float sqrtd = sqrtf(disc);
+    float t     = (-half_b - sqrtd) / a;
+    if (t <= tmin || t >= tmax) {
+        t = (-half_b + sqrtd) / a;
+        if (t <= tmin || t >= tmax) return false;
     }
 
-    rec.t        = t;
-    rec.point    = light.at(t);
-    rec.mat_index = sphere.mat_index;
-    rec.set_face_normal(light, (rec.point - sphere.center) / sphere.radius);
+    rec.t     = t;
+    rec.p     = ro + rd * t;
+    F3 out_n  = (rec.p - s.center) * (1.0f / s.radius);
+    rec.front = rd.dot(out_n) < 0.0f;
+    rec.n     = rec.front ? out_n : -out_n;
+    rec.mat   = s.mat_idx;
     return true;
 }
 
 // =========================================================================
-// Device-side scene intersection (mirrors HittableList::hit)
+// Scene intersection (reads from constant memory — broadcast-cached)
 // =========================================================================
 
-__device__ bool cuda_hit_scene(const CudaScene& scene,
-                                const Ray& light,
-                                real t_min, real t_max,
-                                CudaHitRecord& rec)
+__forceinline__ __device__ bool hit_scene(
+    const F3& ro, const F3& rd,
+    float tmin, float tmax,
+    HitRec& rec)
 {
-    CudaHitRecord temp;
-    bool hit_anything      = false;
-    real closest_so_far    = t_max;
+    HitRec tmp;
+    bool   hit  = false;
+    float  best = tmax;
 
-    for (int i = 0; i < scene.sphere_count; ++i) {
-        if (cuda_hit_sphere(scene.spheres[i], light, t_min, closest_so_far, temp)) {
-            hit_anything    = true;
-            closest_so_far  = temp.t;
-            rec             = temp;
+    for (int i = 0; i < c_sphere_cnt; ++i) {
+        if (hit_sphere(c_spheres[i], ro, rd, tmin, best, tmp)) {
+            hit  = true;
+            best = tmp.t;
+            rec  = tmp;
         }
     }
-    return hit_anything;
+    return hit;
 }
 
 // =========================================================================
-// Device-side scatter (mirrors Material subclasses)
+// Scatter (material response)
 // =========================================================================
 
-__device__ bool cuda_scatter(const CudaMaterial& mat,
-                              const Ray& light,
-                              const CudaHitRecord& rec,
-                              Color& attenuation,
-                              Ray& scattered,
-                              curandState* state)
+__forceinline__ __device__ bool scatter(
+    const GpuMat& mat,
+    const F3& rd, const HitRec& rec,
+    C3& att, F3& scat_o, F3& scat_d,
+    curandState* s)
 {
+    scat_o = rec.p;
     switch (mat.type) {
-        case CudaMaterial::Type::Lambertian: {
-            Vec3 scatter_dir = rec.normal + cuda_random_unit_vector(state);
-            if (scatter_dir.near_zero())
-                scatter_dir = rec.normal;
-            scattered   = make_ray(rec.point, scatter_dir);
-            attenuation = mat.albedo;
+
+        case 0: {   // Lambertian — cosine-weighted diffuse
+            F3 dir = rec.n + rand_unit(s);
+            if (dir.near_zero()) dir = rec.n;
+            scat_d = dir;
+            att    = mat.albedo;
             return true;
         }
-        case CudaMaterial::Type::Metal: {
-            Vec3 reflected = light.direction().normalized().reflect(rec.normal);
-            scattered   = make_ray(rec.point, reflected + mat.fuzz * cuda_random_in_unit_sphere(state));
-            attenuation = mat.albedo;
+
+        case 1: {   // Metal — specular reflection with optional fuzz
+            F3 ref = rd.normalized().reflect(rec.n);
+            scat_d = ref + rand_in_unit_sphere(s) * mat.fuzz;
+            att    = mat.albedo;
+            return scat_d.dot(rec.n) > 0.0f;
+        }
+
+        case 2: {   // Dielectric — Fresnel/Schlick refraction + reflection
+            att = C3{1.0f, 1.0f, 1.0f};
+            float eta    = rec.front ? (1.0f / mat.ir) : mat.ir;
+            F3    unit_d = rd.normalized();
+            float cos_t  = fminf(-unit_d.dot(rec.n), 1.0f);
+            float sin_t  = sqrtf(1.0f - cos_t * cos_t);
+
+            bool  no_ref = eta * sin_t > 1.0f;
+            float r0     = (1.0f - eta) / (1.0f + eta);
+            r0           = r0 * r0;
+            float schlick = r0 + (1.0f - r0) * powf(1.0f - cos_t, 5.0f);
+
+            scat_d = (no_ref || schlick > rnd(s))
+                         ? unit_d.reflect(rec.n)
+                         : unit_d.refract(rec.n, eta);
             return true;
         }
-        case CudaMaterial::Type::Dielectric: {
-            attenuation = Color(1.0, 1.0, 1.0);
-            real refraction_ratio = rec.front_face ? (1.0 / mat.ir) : mat.ir;
 
-            Vec3 unit_dir  = light.direction().normalized();
-            real cos_theta = fmin(-unit_dir.dot(rec.normal), 1.0);
-            real sin_theta = sqrt(1.0 - cos_theta * cos_theta);
-
-            bool cannot_refract = refraction_ratio * sin_theta > 1.0;
-            // Schlick approximation
-            real r0 = (1 - refraction_ratio) / (1 + refraction_ratio);
-            r0 = r0 * r0;
-            real reflectance = r0 + (1 - r0) * pow((1 - cos_theta), 5);
-
-            Vec3 direction;
-            if (cannot_refract || reflectance > cuda_random_real(state)) {
-                direction = unit_dir.reflect(rec.normal);
-            } else {
-                direction = unit_dir.refract(rec.normal, refraction_ratio);
-            }
-            scattered = make_ray(rec.point, direction);
-            return true;
-        }
         default:
             return false;
     }
 }
 
 // =========================================================================
-// Device-side ray colour (mirrors Camera::ray_color)
+// Ray colour — iterative (avoids GPU call-stack pressure)
+//
+// Sky gradient: white (y=-1) → light blue 0x80B3FF (y=+1).
 // =========================================================================
 
-__device__ Color cuda_ray_color(const Ray& light,
-                                 int depth,
-                                 const CudaScene& scene,
-                                 curandState* state)
+__forceinline__ __device__ C3 ray_color(
+    F3 ro, F3 rd,
+    int max_depth,
+    curandState* s)
 {
-    Ray   current_ray   = light;
-    Color accumulated   = Color(1.0, 1.0, 1.0);
+    C3 acc{1.0f, 1.0f, 1.0f};
 
-    for (int d = 0; d < depth; ++d) {
-        CudaHitRecord rec;
-        if (cuda_hit_scene(scene, current_ray, 0.001, infinity, rec)) {
-            Ray   scattered;
-            Color attenuation;
-            if (rec.mat_index >= 0 && rec.mat_index < scene.material_count &&
-                cuda_scatter(scene.materials[rec.mat_index], current_ray, rec, attenuation, scattered, state))
-            {
-                accumulated = accumulated * attenuation;
-                current_ray = scattered;
-            } else {
-                // Absorbed – contribute nothing
-                return Color(0.0, 0.0, 0.0);
-            }
+    for (int d = 0; d < max_depth; ++d) {
+        HitRec rec;
+        if (hit_scene(ro, rd, 1e-4f, 1e30f, rec)) {
+            if (rec.mat < 0 || rec.mat >= c_mat_cnt)
+                return C3{0.0f, 0.0f, 0.0f};
+
+            C3 att;
+            F3 scat_o, scat_d;
+            if (!scatter(c_materials[rec.mat], rd, rec, att, scat_o, scat_d, s))
+                return C3{0.0f, 0.0f, 0.0f};
+
+            acc *= att;
+            ro   = scat_o;
+            rd   = scat_d;
         } else {
-            // Background gradient (same as CPU version)
-            Vec3 unit_dir = current_ray.direction().normalized();
-            const real a  = 0.5 * (unit_dir.y() + 1.0);
-            Color background = Color::rgb(0xffffff).mix(Color::rgb(0x80B3FF), a).to_unit();
-            return accumulated * background;
+            // Sky gradient: lerp(white, #80B3FF, 0.5*(unit_y + 1))
+            F3    u = rd.normalized();
+            float a = 0.5f * (u.y + 1.0f);
+            // 0x80/0xFF = 0.5020, 0xB3/0xFF = 0.7020
+            C3 sky{
+                (1.0f - a) + a * (128.0f / 255.0f),
+                (1.0f - a) + a * (179.0f / 255.0f),
+                1.0f
+            };
+            return acc * sky;
         }
     }
-    // Max depth reached – return black
-    return Color(0.0, 0.0, 0.0);
+    return C3{0.0f, 0.0f, 0.0f};  // max depth reached
+}
+
+// Gamma-correct a linear [0,1] value with γ = 2.0 (sqrt).
+__forceinline__ __device__ float gamma2(float v) {
+    return v > 0.0f ? sqrtf(v) : 0.0f;
+}
+
+// Convert a [0,1] float to a clamped uint8_t.
+__forceinline__ __device__ uint8_t to_byte(float v) {
+    const int i = (int)(v * 255.999f);
+    return (uint8_t)(i < 0 ? 0 : (i > 255 ? 255 : i));
 }
 
 // =========================================================================
-// Kernel: one thread per pixel, multiple samples per pixel
+// Kernel: one thread per pixel, cam.spp samples accumulated per pixel
 // =========================================================================
 
-__global__ void render_kernel(uint8_t*              output,
-                               CudaCameraParams      cam,
-                               CudaScene             scene,
-                               unsigned int          seed)
+__global__ void render_kernel(
+    uint8_t* __restrict__ out,
+    GpuCam  cam,
+    unsigned seed)
 {
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int x = (int)(blockIdx.x * blockDim.x + threadIdx.x);
+    const int y = (int)(blockIdx.y * blockDim.y + threadIdx.y);
+    if (x >= cam.w || y >= cam.h) return;
 
-    if (x >= cam.image_width || y >= cam.image_height)
-        return;
+    // Use seed as the RNG seed and the pixel index as the sequence number.
+    // Each sequence in xorwow is guaranteed to produce 2^67 non-overlapping
+    // values, so no two pixels share any portion of the same stream.
+    curandState rng;
+    curand_init(seed, (unsigned long long)(y * cam.w + x), 0, &rng);
 
-    // Initialise per-thread cuRAND state
-    curandState rng_state;
-    curand_init(seed, y * cam.image_width + x, 0, &rng_state);
+    C3 color{0.0f, 0.0f, 0.0f};
+    F3 pixel_center = cam.pixel00 + cam.du * (float)x + cam.dv * (float)y;
 
-    Color pixel_color{};
+    for (int s = 0; s < cam.spp; ++s) {
+        // Tent/uniform jitter within the pixel footprint
+        F3 sample = pixel_center
+                  + cam.du * rnd(&rng, -0.5f, 0.5f)
+                  + cam.dv * rnd(&rng, -0.5f, 0.5f);
 
-    // Pixel center is constant across all samples – compute once.
-    const Vec3 height_vec  = static_cast<real>(y) * cam.pixel_delta_v;
-    const Vec3 pixel_center = cam.pixel100_loc
-                            + (static_cast<real>(x) * cam.pixel_delta_u)
-                            + height_vec;
-
-    for (int s = 0; s < cam.samples_per_pixel; ++s) {
-        // Sample offset within pixel (same as Camera::pixel_sample_square)
-        Vec3 pixel_sample = pixel_center
-                          + cuda_random_real(&rng_state, -0.5, 0.5) * cam.pixel_delta_u
-                          + cuda_random_real(&rng_state, -0.5, 0.5) * cam.pixel_delta_v;
-
-        Point3 ray_origin;
-        if (cam.defocus_angle <= 0) {
-            ray_origin = cam.camera_center;
+        F3 ro;
+        if (cam.defocus_angle <= 0.0f) {
+            ro = cam.origin;
         } else {
-            Vec3 p    = cuda_random_in_unit_disk(&rng_state);
-            ray_origin = cam.camera_center
-                        + p.x() * cam.defocus_disk_u
-                        + p.y() * cam.defocus_disk_v;
+            F3 p = rand_in_unit_disk(&rng);
+            ro   = cam.origin + cam.defocus_u * p.x + cam.defocus_v * p.y;
         }
 
-        Ray ray = make_ray(ray_origin, pixel_sample - ray_origin);
-
-        Color sample_color = cuda_ray_color(ray, cam.max_depth, scene, &rng_state).to_ununit();
-        pixel_color += sample_color;
+        color += ray_color(ro, sample - ro, cam.max_depth, &rng);
     }
 
-    pixel_color /= static_cast<real>(cam.samples_per_pixel);
-    pixel_color  = pixel_color.gamma_correction();
-
-    // Write RGBA to output buffer
-    const int idx       = (y * cam.image_width + x) * 4;
-    output[idx + 0]     = static_cast<uint8_t>(pixel_color.red()   < 0 ? 0 : (pixel_color.red()   > 255 ? 255 : pixel_color.red()));
-    output[idx + 1]     = static_cast<uint8_t>(pixel_color.green() < 0 ? 0 : (pixel_color.green() > 255 ? 255 : pixel_color.green()));
-    output[idx + 2]     = static_cast<uint8_t>(pixel_color.blue()  < 0 ? 0 : (pixel_color.blue()  > 255 ? 255 : pixel_color.blue()));
-    output[idx + 3]     = 255;
+    // Average + gamma-correct (γ = 2.0, i.e. sqrt, as per RTIOW standard)
+    const float inv = 1.0f / (float)cam.spp;
+    const int idx   = (y * cam.w + x) * 4;
+    out[idx + 0]    = to_byte(gamma2(color.x * inv));
+    out[idx + 1]    = to_byte(gamma2(color.y * inv));
+    out[idx + 2]    = to_byte(gamma2(color.z * inv));
+    out[idx + 3]    = 0xff;
 }
 
 // =========================================================================
-// Public host function declared in render.hh
+// Utility: convert double-based host Vec3 to float F3
+// =========================================================================
+
+static inline F3 to_f3(const ohtoai::math::Vec3& v) {
+    return { (float)v.x(), (float)v.y(), (float)v.z() };
+}
+
+// =========================================================================
+// Public host entry point (declared in render.hh)
 // =========================================================================
 
 namespace ohtoai {
@@ -284,47 +377,70 @@ void render_cuda(const CudaCameraParams& cam,
                  const CudaScene&        host_scene,
                  uint8_t*                host_output)
 {
-    // --- upload scene data ------------------------------------------------
-    CudaSphere*   d_spheres   = nullptr;
-    CudaMaterial* d_materials = nullptr;
+    // --- Convert scene to GPU float structs, upload to constant memory -------
+    static GpuSphere host_spheres[MAX_SPHERES];
+    static GpuMat    host_mats[MAX_MATERIALS];
 
-    cudaMalloc(&d_spheres,   sizeof(CudaSphere)   * host_scene.sphere_count);
-    cudaMalloc(&d_materials, sizeof(CudaMaterial) * host_scene.material_count);
+    const int sc = std::min(host_scene.sphere_count,   MAX_SPHERES);
+    const int mc = std::min(host_scene.material_count, MAX_MATERIALS);
 
-    cudaMemcpy(d_spheres,   host_scene.spheres,
-               sizeof(CudaSphere)   * host_scene.sphere_count,   cudaMemcpyHostToDevice);
-    cudaMemcpy(d_materials, host_scene.materials,
-               sizeof(CudaMaterial) * host_scene.material_count, cudaMemcpyHostToDevice);
+    for (int i = 0; i < sc; ++i) {
+        host_spheres[i].center  = to_f3(host_scene.spheres[i].center);
+        host_spheres[i].radius  = (float)host_scene.spheres[i].radius;
+        host_spheres[i].mat_idx = host_scene.spheres[i].mat_index;
+    }
+    for (int i = 0; i < mc; ++i) {
+        const auto& m      = host_scene.materials[i];
+        host_mats[i].type  = (int)m.type;
+        host_mats[i].albedo = {
+            (float)m.albedo.red(),
+            (float)m.albedo.green(),
+            (float)m.albedo.blue()
+        };
+        host_mats[i].fuzz  = (float)m.fuzz;
+        host_mats[i].ir    = (float)m.ir;
+    }
 
-    CudaScene d_scene { d_spheres, host_scene.sphere_count,
-                        d_materials, host_scene.material_count };
+    cudaMemcpyToSymbol(c_spheres,    host_spheres,     sizeof(GpuSphere) * sc);
+    cudaMemcpyToSymbol(c_materials,  host_mats,        sizeof(GpuMat)    * mc);
+    cudaMemcpyToSymbol(c_sphere_cnt, &sc,              sizeof(int));
+    cudaMemcpyToSymbol(c_mat_cnt,    &mc,              sizeof(int));
 
-    // --- allocate output buffer -------------------------------------------
-    const int   pixel_count  = cam.image_width * cam.image_height;
-    const size_t output_size = pixel_count * 4;   // RGBA
+    // --- Build float camera params -------------------------------------------
+    GpuCam gpu_cam;
+    gpu_cam.w             = cam.image_width;
+    gpu_cam.h             = cam.image_height;
+    gpu_cam.spp           = cam.samples_per_pixel;
+    gpu_cam.max_depth     = cam.max_depth;
+    gpu_cam.pixel00       = to_f3(cam.pixel100_loc);
+    gpu_cam.du            = to_f3(cam.pixel_delta_u);
+    gpu_cam.dv            = to_f3(cam.pixel_delta_v);
+    gpu_cam.origin        = to_f3(cam.camera_center);
+    gpu_cam.defocus_u     = to_f3(cam.defocus_disk_u);
+    gpu_cam.defocus_v     = to_f3(cam.defocus_disk_v);
+    gpu_cam.defocus_angle = (float)cam.defocus_angle;
 
-    uint8_t* d_output = nullptr;
-    cudaMalloc(&d_output, output_size);
-    cudaMemset(d_output, 0, output_size);
+    // --- Allocate device output buffer ----------------------------------------
+    const size_t output_size = (size_t)cam.image_width * cam.image_height * 4;
+    uint8_t* d_out = nullptr;
+    cudaMalloc(&d_out, output_size);
 
-    // --- launch kernel ----------------------------------------------------
-    const dim3 threads(16, 16);
-    const dim3 blocks((cam.image_width  + threads.x - 1) / threads.x,
-                      (cam.image_height + threads.y - 1) / threads.y);
+    // --- Launch: 16×8 block (128 threads, warp-friendly 2:1 width:height) ----
+    const dim3 block(16, 8);
+    const dim3 grid(
+        (cam.image_width  + block.x - 1) / block.x,
+        (cam.image_height + block.y - 1) / block.y
+    );
 
-    render_kernel<<<blocks, threads>>>(d_output, cam, d_scene,
-                                       static_cast<unsigned int>(
-                                           std::chrono::high_resolution_clock::now()
-                                               .time_since_epoch().count()));
+    const unsigned seed = (unsigned)
+        std::chrono::high_resolution_clock::now().time_since_epoch().count();
+
+    render_kernel<<<grid, block>>>(d_out, gpu_cam, seed);
     cudaDeviceSynchronize();
 
-    // --- retrieve results -------------------------------------------------
-    cudaMemcpy(host_output, d_output, output_size, cudaMemcpyDeviceToHost);
-
-    // --- cleanup ----------------------------------------------------------
-    cudaFree(d_output);
-    cudaFree(d_spheres);
-    cudaFree(d_materials);
+    // --- Copy result back to host ---------------------------------------------
+    cudaMemcpy(host_output, d_out, output_size, cudaMemcpyDeviceToHost);
+    cudaFree(d_out);
 }
 
 } // namespace math
