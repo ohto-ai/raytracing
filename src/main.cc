@@ -66,7 +66,6 @@ int main() {
     }
     {
         auto start = std::chrono::high_resolution_clock::now();
-        render_ray_tracing
         camera.render_ray_tracing(world, [&](int x, int y, const auto& color) {
             auto easyx_color = color.to_easyx_color();
             for (int i = 0; i < ratio; ++i) {
