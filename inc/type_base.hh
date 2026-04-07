@@ -12,6 +12,17 @@
 #include <numbers>
 #endif
 
+// CUDA compatibility macros
+#ifdef __CUDACC__
+#  define OHTOAI_HOST_DEVICE __host__ __device__
+#  define OHTOAI_DEVICE      __device__
+#  define OHTOAI_HOST        __host__
+#else
+#  define OHTOAI_HOST_DEVICE
+#  define OHTOAI_DEVICE
+#  define OHTOAI_HOST
+#endif
+
 namespace ohtoai{
     namespace type {
         enum class endian
@@ -41,11 +52,11 @@ namespace ohtoai{
             inline constexpr auto epsilon = std::numeric_limits<real>::epsilon();
         }
 
-        inline real degrees_to_radians(real degrees) {
+        inline OHTOAI_HOST_DEVICE real degrees_to_radians(real degrees) {
             return degrees * constants::pi / 180.0;
         }
 
-        inline real liner_to_gamma(real liner) {
+        inline OHTOAI_HOST_DEVICE real liner_to_gamma(real liner) {
             return std::sqrt(liner);
         }
 

@@ -10,31 +10,31 @@ namespace ohtoai{
     namespace math {
         class Interval {
         public:
-            Interval() = default;
-            Interval(const Interval&) = default;
-            Interval(Interval&&) = default;
-            Interval& operator=(const Interval&) = default;
-            Interval& operator=(Interval&&) = default;
-            ~Interval() = default;
+            OHTOAI_HOST_DEVICE Interval() = default;
+            OHTOAI_HOST_DEVICE Interval(const Interval&) = default;
+            OHTOAI_HOST_DEVICE Interval(Interval&&) = default;
+            OHTOAI_HOST_DEVICE Interval& operator=(const Interval&) = default;
+            OHTOAI_HOST_DEVICE Interval& operator=(Interval&&) = default;
+            OHTOAI_HOST_DEVICE ~Interval() = default;
 
-            Interval(real min, real max) : min_(min), max_(max) {}
+            OHTOAI_HOST_DEVICE Interval(real min, real max) : min_(min), max_(max) {}
 
-            real min() const { return min_; }
-            real max() const { return max_; }
+            OHTOAI_HOST_DEVICE real min() const { return min_; }
+            OHTOAI_HOST_DEVICE real max() const { return max_; }
 
-            bool contains(real value) const {
+            OHTOAI_HOST_DEVICE bool contains(real value) const {
                 return !(value < min_ || max_ < value);
             }
 
-            bool surrounds(real value) const {
+            OHTOAI_HOST_DEVICE bool surrounds(real value) const {
                 return min_ < value && value < max_;
             }
 
-            bool is_empty() const {
+            OHTOAI_HOST_DEVICE bool is_empty() const {
                 return min_ > max_;
             }
 
-            real clamp(real value) const {
+            OHTOAI_HOST_DEVICE real clamp(real value) const {
                 return std::clamp(value, min_, max_);
             }
 
@@ -43,17 +43,16 @@ namespace ohtoai{
                 real max_;
         };
 
-        Interval make_interval(real min, real max) {
+        OHTOAI_HOST_DEVICE inline Interval make_interval(real min, real max) {
             return Interval(min, max);
         }
 
-        Interval make_interval(real value) {
+        OHTOAI_HOST_DEVICE inline Interval make_interval(real value) {
             return Interval(value, value);
         }
 
-        Interval EmptyInterval = make_interval(constants::infinity, -constants::infinity);
-
-        Interval UniverseInterval = make_interval(-constants::infinity, constants::infinity);
+        inline Interval EmptyInterval    = make_interval(constants::infinity, -constants::infinity);
+        inline Interval UniverseInterval = make_interval(-constants::infinity, constants::infinity);
     }
 }
 
