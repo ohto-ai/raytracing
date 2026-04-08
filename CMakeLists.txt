@@ -20,6 +20,11 @@ if(ENABLE_CUDA)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
+    # CUDA 12.3 and earlier may not recognise the latest MSVC toolchain version.
+    # Pass --allow-unsupported-compiler so nvcc skips the host-compiler version
+    # check while still using MSVC for host compilation.
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
+
     add_executable(${PROJECT_NAME} src/main.cc src/render.cu)
 
     if(WIN32)
