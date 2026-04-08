@@ -8,6 +8,7 @@
 #include "hittable_list.hh"
 #include "color.hh"
 #include "material.hh"
+#include "cuda_scene.hh"
 #include <thread>
 
 namespace ohtoai{
@@ -87,6 +88,29 @@ namespace ohtoai{
                 const auto a = 0.5 * (unit_direction.y() + 1.0);
                 auto result = Color::rgb(0xffffff).mix(Color::rgb(0x80B3FF), a).to_unit();
                 return result;
+            }
+
+            /// Initialise the camera geometry (normally called by render_*).
+            /// Exposed publicly so that callers can pre-compute geometry
+            /// before passing it to the render_cpu / render_cuda helpers.
+            void setup() { initialize(); }
+
+            /// Extract pre-computed camera parameters for use with
+            /// render_cpu() / render_cuda().
+            CudaCameraParams to_cuda_params() const {
+                CudaCameraParams p;
+                p.image_width       = image_width;
+                p.image_height      = image_height;
+                p.samples_per_pixel = samples_per_pixel;
+                p.max_depth         = max_depth;
+                p.defocus_angle     = defocus_angle;
+                p.pixel100_loc      = pixel100_loc;
+                p.pixel_delta_u     = pixel_delta_u;
+                p.pixel_delta_v     = pixel_delta_v;
+                p.camera_center     = camera_center;
+                p.defocus_disk_u    = defocus_disk_u;
+                p.defocus_disk_v    = defocus_disk_v;
+                return p;
             }
         public:
             int image_width = 640;

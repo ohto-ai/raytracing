@@ -1,35 +1,55 @@
 ﻿cmake_minimum_required (VERSION 3.10)
 
-project(raytracing LANGUAGES CXX )
+# CUDA is the sole rendering back-end.
+# Set ENABLE_CUDA=ON when a CUDA toolkit and NVIDIA GPU are available.
+option(ENABLE_CUDA "Enable CUDA rendering (requires NVIDIA GPU + CUDA toolkit)" OFF)
+
+if(ENABLE_CUDA)
+    project(raytracing LANGUAGES CXX CUDA)
+else()
+    project(raytracing LANGUAGES CXX)
+endif()
 
 find_package(Threads REQUIRED)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Add source files
-set(SOURCES src/main.cc)
+if(ENABLE_CUDA)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
-# Build the executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+    # CUDA 12.3 and earlier may not recognise the latest MSVC toolchain version.
+    # Pass --allow-unsupported-compiler so nvcc skips the host-compiler version
+    # check while still using MSVC for host compilation.
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
 
-if(WIN32)
-  add_compile_definitions(WIN32_LEAN_AND_MEAN)
-  add_compile_definitions(NOMINMAX)
-endif(WIN32)
-add_compile_definitions(SPDLOG_FMT_EXTERNAL)
-add_compile_definitions(FMT_HEADER_ONLY)
+    add_executable(${PROJECT_NAME} src/main.cc src/render.cu)
 
-target_include_directories(${PROJECT_NAME} PRIVATE 3rd/inc)
-target_include_directories(${PROJECT_NAME} PRIVATE inc)
+    if(WIN32)
+      target_compile_definitions(${PROJECT_NAME} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+    endif()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        SPDLOG_FMT_EXTERNAL
+        FMT_HEADER_ONLY
+        OHTOAI_ENABLE_CUDA
+    )
 
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(ARCH x64)
-else()
-  set(ARCH x86)
+    target_include_directories(${PROJECT_NAME} PRIVATE 3rd/inc inc)
+
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+      set(ARCH x64)
+    else()
+      set(ARCH x86)
+    endif()
+    target_link_directories(${PROJECT_NAME} PRIVATE 3rd/lib/${ARCH} 3rd/lib)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+
+    # Target all common GPU architectures (Volta / Turing / Ampere / Ada / Hopper)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        CUDA_ARCHITECTURES "all-major"
+    )
 endif()
-target_link_directories(${PROJECT_NAME} PRIVATE 3rd/lib/${ARCH})
-target_link_directories(${PROJECT_NAME} PRIVATE 3rd/lib)
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
 
 add_subdirectory(test)
